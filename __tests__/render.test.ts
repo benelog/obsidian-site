@@ -5,8 +5,8 @@ import {
   processWikilinks,
   renderRelated,
   renderBacklinks,
-} from './render.js';
-import type { PageInfo } from './types.js';
+} from '../src/render.js';
+import type { PageInfo } from '../src/types.js';
 
 function pages(entries: Record<string, string>): Map<string, PageInfo> {
   const map = new Map<string, PageInfo>();

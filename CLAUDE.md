@@ -13,7 +13,7 @@ src/
   types.ts      — Shared types and constants (WIKILINK_RE, PageInfo, SiteConfig)
   graph.ts      — Graph/link analysis (extractWikilinks, buildGraph, buildBacklinks)
   render.ts     — HTML rendering (convertMarkdown, processWikilinks, buildPage, buildIndex)
-  *.test.ts     — Co-located test files
+__tests__/      — Test files (*.test.ts)
 layouts/        — HTML templates (page.html, index.html) with {placeholder} syntax
 styles/         — CSS (style.css)
 dist/           — Compiled JS output (gitignored)

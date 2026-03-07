@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { extractWikilinks, buildGraph, buildBacklinks } from './graph.js';
-import type { PageInfo } from './types.js';
+import { extractWikilinks, buildGraph, buildBacklinks } from '../src/graph.js';
+import type { PageInfo } from '../src/types.js';
 
 function pages(entries: Record<string, string>): Map<string, PageInfo> {
   const map = new Map<string, PageInfo>();
