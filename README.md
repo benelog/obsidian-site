@@ -7,7 +7,14 @@ A static site generator for [Obsidian](https://obsidian.md/) vaults. Converts yo
 ### Using the CLI
 
 ```bash
-npx obsidian-site build --source /path/to/vault
+npx github:benelog/obsidian-site build --source /path/to/vault
+```
+
+Or install globally:
+
+```bash
+npm install -g github:benelog/obsidian-site
+obsidian-site build --source /path/to/vault
 ```
 
 This reads your vault, generates HTML pages, and writes them to `public/` (or the directory specified in `site.yaml`).
@@ -23,28 +30,23 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
   pages: write
   id-token: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: benelog/obsidian-site@v0
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: public
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+      - uses: benelog/obsidian-site@v1
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - id: deploy
+        uses: actions/deploy-pages@v4
 ```
 
 #### Action Inputs
@@ -118,7 +120,7 @@ The index page includes:
 ## Local Preview
 
 ```bash
-npx obsidian-site build --source /path/to/vault
+npx github:benelog/obsidian-site build --source /path/to/vault
 python3 -m http.server 8000 -d /path/to/vault/public
 ```
 
