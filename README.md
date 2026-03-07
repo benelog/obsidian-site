@@ -134,7 +134,7 @@ python3 -m http.server 8000 -d /path/to/vault/public
 
 ## Template Repository
 
-Use [obsidian-site-template](https://github.com/benelog/obsidian-site-template) to create a new site from scratch with a pre-configured GitHub Actions workflow. A live demo is available at https://benelog.github.io/obsidian-site-template.
+Use [obsidian Site Template](https://github.com/benelog/obsidian-site-template) to create a new site from scratch with a pre-configured GitHub Actions workflow. A live demo is available at https://benelog.github.io/obsidian-site-template.
 
 ## License
 
