@@ -2,6 +2,8 @@
 
 A static site generator for [Obsidian](https://obsidian.md/) vaults. Converts your Markdown notes into a browsable website with an interactive link graph, wikilink navigation, and auto-generated backlinks.
 
+![Screenshot](screenshot.png)
+
 ## Quick Start
 
 ### Using the CLI
@@ -128,7 +130,7 @@ python3 -m http.server 8000 -d /path/to/vault/public
 
 ## Template Repository
 
-Use [obsidian-site-template](https://github.com/benelog/obsidian-site-template) to create a new site from scratch with a pre-configured GitHub Actions workflow.
+Use [obsidian-site-template](https://github.com/benelog/obsidian-site-template) to create a new site from scratch with a pre-configured GitHub Actions workflow. A live demo is available at https://benelog.github.io/obsidian-site-template.
 
 ## License
 
