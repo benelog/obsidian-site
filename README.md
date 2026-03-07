@@ -1,4 +1,4 @@
-# obsidian-site
+# Obsidian Site
 
 A static site generator for [Obsidian](https://obsidian.md/) vaults. Converts your Markdown notes into a browsable website with an interactive link graph, wikilink navigation, and auto-generated backlinks.
 
