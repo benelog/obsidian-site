@@ -2,6 +2,7 @@ export const WIKILINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 export interface PageInfo {
   path: string;
+  title: string;
   content: string;
 }
 

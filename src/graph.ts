@@ -54,10 +54,10 @@ export function buildGraph(pages: Map<string, PageInfo>): GraphData {
   }
 
   const nodes: GraphNode[] = [];
-  for (const [stem] of pages) {
+  for (const [stem, info] of pages) {
     nodes.push({
       id: stem,
-      title: stem.replace(/-/g, ' '),
+      title: info.title,
       count: linkCounts.get(stem) || 0,
     });
   }

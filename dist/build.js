@@ -27,7 +27,18 @@ export function scanVault(source, contentDirectory) {
     for (const file of files) {
         const stem = basename(file, '.md');
         const filePath = join(scanDir, file);
-        pages.set(stem, { path: filePath, content: readFileSync(filePath, 'utf-8') });
+        const raw = readFileSync(filePath, 'utf-8');
+        let title = stem.replace(/-/g, ' ');
+        let content = raw;
+        const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+        if (fmMatch) {
+            const fm = parseYaml(fmMatch[1]);
+            if (fm && typeof fm.title === 'string') {
+                title = fm.title;
+            }
+            content = raw.slice(fmMatch[0].length).replace(/^\r?\n/, '');
+        }
+        pages.set(stem, { path: filePath, title, content });
     }
     return pages;
 }

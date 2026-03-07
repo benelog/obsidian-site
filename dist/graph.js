@@ -32,10 +32,10 @@ export function buildGraph(pages) {
         linkCounts.set(b, (linkCounts.get(b) || 0) + 1);
     }
     const nodes = [];
-    for (const [stem] of pages) {
+    for (const [stem, info] of pages) {
         nodes.push({
             id: stem,
-            title: stem.replace(/-/g, ' '),
+            title: info.title,
             count: linkCounts.get(stem) || 0,
         });
     }

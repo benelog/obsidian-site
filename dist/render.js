@@ -35,8 +35,7 @@ export function renderRelated(wikilinks, pages) {
             continue;
         seen.add(target);
         if (pages.has(target)) {
-            const display = extractTitle(target);
-            items.push(`<li><a href="${target}.html">${display}</a></li>`);
+            items.push(`<li><a href="${target}.html">${pages.get(target).title}</a></li>`);
         }
     }
     if (items.length === 0)
@@ -49,8 +48,7 @@ export function renderBacklinks(stem, backlinks, pages) {
         return '';
     const items = [];
     for (const src of links) {
-        const display = extractTitle(src);
-        items.push(`<li><a href="${src}.html">${display}</a></li>`);
+        items.push(`<li><a href="${src}.html">${pages.get(src).title}</a></li>`);
     }
     return '<section class="backlinks"><h2>Backlinks</h2><ul>' + items.join('\n') + '</ul></section>';
 }
@@ -62,8 +60,9 @@ export function renderEditLink(stem, contentDirectory, gitHub) {
     return `<a href="${url}" class="edit-link" target="_blank" rel="noopener noreferrer">Edit</a>`;
 }
 export function buildPage(stem, pages, backlinks, template, config) {
-    const content = pages.get(stem).content;
-    const title = extractTitle(stem);
+    const page = pages.get(stem);
+    const content = page.content;
+    const title = page.title;
     const wikilinks = extractWikilinks(content);
     const contentWithoutRelated = content.split(/^##\s+Related\s*$/m)[0];
     let htmlBody = convertMarkdown(contentWithoutRelated);
@@ -84,8 +83,7 @@ export function buildPage(stem, pages, backlinks, template, config) {
 export function buildIndex(graphData, pages, template, config) {
     const pageListItems = [];
     for (const stem of [...pages.keys()].sort()) {
-        const title = extractTitle(stem);
-        pageListItems.push(`<li><a href="${stem}.html">${title}</a></li>`);
+        pageListItems.push(`<li><a href="${stem}.html">${pages.get(stem).title}</a></li>`);
     }
     const pageListHtml = pageListItems.join('\n');
     return template

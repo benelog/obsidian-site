@@ -11,7 +11,7 @@ import type { PageInfo } from '../src/types.js';
 function pages(entries: Record<string, string>): Map<string, PageInfo> {
   const map = new Map<string, PageInfo>();
   for (const [stem, content] of Object.entries(entries)) {
-    map.set(stem, { path: `${stem}.md`, content });
+    map.set(stem, { path: `${stem}.md`, title: stem.replace(/-/g, ' '), content });
   }
   return map;
 }

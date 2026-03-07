@@ -1,6 +1,7 @@
 export declare const WIKILINK_RE: RegExp;
 export interface PageInfo {
     path: string;
+    title: string;
     content: string;
 }
 export interface GitHubConfig {
