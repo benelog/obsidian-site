@@ -7,13 +7,13 @@ A static site generator for [Obsidian](https://obsidian.md/) vaults. Converts yo
 ### Using the CLI
 
 ```bash
-npx github:benelog/obsidian-site build --source /path/to/vault
+npx obsidian-site build --source /path/to/vault
 ```
 
 Or install globally:
 
 ```bash
-npm install -g github:benelog/obsidian-site
+npm install -g obsidian-site
 obsidian-site build --source /path/to/vault
 ```
 
@@ -48,6 +48,8 @@ jobs:
       - id: deploy
         uses: actions/deploy-pages@v4
 ```
+
+> **Note:** This workflow requires the repository's **Settings → Pages → Build and deployment → Source** to be set to **GitHub Actions**. For more details on the actions used above, see [Using custom workflows with GitHub Pages](https://docs.github.com/en/enterprise-cloud@latest/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
 #### Action Inputs
 
@@ -120,7 +122,7 @@ The index page includes:
 ## Local Preview
 
 ```bash
-npx github:benelog/obsidian-site build --source /path/to/vault
+npx obsidian-site build --source /path/to/vault
 python3 -m http.server 8000 -d /path/to/vault/public
 ```
 
