@@ -1,5 +1,8 @@
 name: 'Obsidian Site'
 description: 'Build a static website from an Obsidian vault'
+branding:
+  icon: 'book-open'
+  color: 'purple'
 inputs:
   source:
     description: 'Path to the Obsidian vault'
