@@ -1,0 +1,31 @@
+{
+  "name": "obsidian-site",
+  "version": "0.1.0",
+  "description": "Build a static website from an Obsidian vault",
+  "type": "module",
+  "bin": {
+    "obsidian-site": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "layouts",
+    "styles"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "tsc"
+  },
+  "dependencies": {
+    "marked": "^15.0.0",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  },
+  "keywords": ["obsidian", "static-site-generator", "markdown"],
+  "license": "MIT"
+}

@@ -1,0 +1,26 @@
+name: 'Obsidian Site'
+description: 'Build a static website from an Obsidian vault'
+inputs:
+  source:
+    description: 'Path to the Obsidian vault'
+    default: '.'
+  output:
+    description: 'Output directory (overrides site.yaml setting)'
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Install obsidian-site
+      run: cd ${{ github.action_path }} && npm ci
+      shell: bash
+    - name: Build site
+      run: |
+        args="build --source ${{ inputs.source }}"
+        if [ -n "${{ inputs.output }}" ]; then
+          args="$args --output ${{ inputs.output }}"
+        fi
+        node ${{ github.action_path }}/dist/cli.js $args
+      shell: bash
