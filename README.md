@@ -115,6 +115,10 @@ Options:
 - A `## Related` section in your note is extracted and rendered in the sidebar
 - Backlinks (pages that link to the current page) are automatically generated in the sidebar
 
+### Edit Link
+
+If `gitHub.repository-url` and `gitHub.content-branch` are set in `site.yaml`, each page includes an "Edit" link that opens the source Markdown file directly on GitHub for editing.
+
 ### Index Page
 
 The index page includes:
