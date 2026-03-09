@@ -21,7 +21,8 @@ export function scanVault(source, contentDirectory) {
     const contentDir = join(source, contentDirectory);
     const scanDir = existsSync(contentDir) ? contentDir : source;
     const pages = new Map();
-    const files = readdirSync(scanDir)
+    const files = readdirSync(scanDir, { recursive: true })
+        .map(f => String(f))
         .filter(f => extname(f) === '.md')
         .sort();
     for (const file of files) {
