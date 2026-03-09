@@ -4,6 +4,10 @@ A static site generator for [Obsidian](https://obsidian.md/) vaults. Converts yo
 
 ![Screenshot](screenshot.png)
 
+## Template Repository
+
+Use [obsidian Site Template](https://github.com/benelog/obsidian-site-template) to create a new site from scratch with a pre-configured GitHub Actions workflow. A live demo is available at https://benelog.github.io/obsidian-site-template.
+
 ## Quick Start
 
 ### Using the CLI
@@ -157,16 +161,6 @@ Files in `_layouts/` and `_styles/` take precedence over the built-in defaults.
 The index page includes:
 - An interactive D3.js graph visualization of all note connections
 - A searchable list of all pages
-
-## Local Preview
-
-```bash
-npx obsidian-site serve --source /path/to/vault
-```
-
-## Template Repository
-
-Use [obsidian Site Template](https://github.com/benelog/obsidian-site-template) to create a new site from scratch with a pre-configured GitHub Actions workflow. A live demo is available at https://benelog.github.io/obsidian-site-template.
 
 ## License
 
