@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { readFileSync, existsSync, rmSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { build } from '../src/build.js';
 
@@ -147,6 +147,81 @@ describe('build integration', () => {
       const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
       expect(html).toContain('"nodes"');
       expect(html).toContain('"links"');
+    });
+  });
+});
+
+describe('custom theme override', () => {
+  const layoutsDir = join(FIXTURE_DIR, '_layouts');
+  const stylesDir = join(FIXTURE_DIR, '_styles');
+
+  afterAll(() => {
+    rmSync(OUTPUT_DIR, { recursive: true, force: true });
+    rmSync(layoutsDir, { recursive: true, force: true });
+    rmSync(stylesDir, { recursive: true, force: true });
+  });
+
+  describe('layout override', () => {
+    afterAll(() => {
+      rmSync(OUTPUT_DIR, { recursive: true, force: true });
+      rmSync(layoutsDir, { recursive: true, force: true });
+    });
+
+    it('uses custom page.html when present in _layouts/', () => {
+      mkdirSync(layoutsDir, { recursive: true });
+      writeFileSync(join(layoutsDir, 'page.html'), '<html><body>CUSTOM-PAGE {content}</body></html>');
+      build({ source: FIXTURE_DIR });
+
+      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
+      expect(html).toContain('CUSTOM-PAGE');
+    });
+
+    it('falls back to built-in templates for non-overridden layouts', () => {
+      // Only page.html was overridden above; index.html should use built-in
+      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
+      expect(html).not.toContain('CUSTOM-PAGE');
+      expect(html).toContain('Sample Site');
+    });
+  });
+
+  describe('styles override', () => {
+    afterAll(() => {
+      rmSync(OUTPUT_DIR, { recursive: true, force: true });
+      rmSync(stylesDir, { recursive: true, force: true });
+    });
+
+    it('copies custom CSS files from _styles/ instead of built-in', () => {
+      mkdirSync(stylesDir, { recursive: true });
+      writeFileSync(join(stylesDir, 'style.css'), '/* custom style */');
+      writeFileSync(join(stylesDir, 'extra.css'), '/* extra style */');
+      build({ source: FIXTURE_DIR });
+
+      const style = readFileSync(join(OUTPUT_DIR, 'style.css'), 'utf-8');
+      expect(style).toBe('/* custom style */');
+      expect(existsSync(join(OUTPUT_DIR, 'extra.css'))).toBe(true);
+      const extra = readFileSync(join(OUTPUT_DIR, 'extra.css'), 'utf-8');
+      expect(extra).toBe('/* extra style */');
+    });
+
+    it('ignores non-CSS files in _styles/', () => {
+      expect(existsSync(join(OUTPUT_DIR, 'readme.txt'))).toBe(false);
+    });
+  });
+
+  describe('no overrides', () => {
+    afterAll(() => {
+      rmSync(OUTPUT_DIR, { recursive: true, force: true });
+    });
+
+    it('uses built-in style.css when _styles/ does not exist', () => {
+      // Ensure no override dirs exist
+      rmSync(layoutsDir, { recursive: true, force: true });
+      rmSync(stylesDir, { recursive: true, force: true });
+      build({ source: FIXTURE_DIR });
+
+      expect(existsSync(join(OUTPUT_DIR, 'style.css'))).toBe(true);
+      const style = readFileSync(join(OUTPUT_DIR, 'style.css'), 'utf-8');
+      expect(style).not.toBe('/* custom style */');
     });
   });
 });

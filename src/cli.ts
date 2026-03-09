@@ -8,8 +8,9 @@
  *   obsidian-site serve  [--source <path>] [--output <path>] [--port <number>]
  */
 
-import { resolve } from 'path';
-import { build } from './build.js';
+import { resolve, join } from 'path';
+import { mkdirSync, copyFileSync } from 'fs';
+import { build, PACKAGE_DIR } from './build.js';
 import { serve } from './serve.js';
 
 function printUsage(): void {
@@ -18,6 +19,7 @@ function printUsage(): void {
 Commands:
   build              Build the static site
   serve (server)     Build and start a local preview server
+  init-theme         Copy built-in layouts and styles to vault for customization
 
 Options:
   --source <path>    Path to the Obsidian vault (default: current directory)
@@ -57,6 +59,19 @@ switch (args.command) {
   case 'server':
     serve({ source: args.source, output: args.output, port: args.port });
     break;
+  case 'init-theme': {
+    const dest = args.source;
+    const layoutsDir = join(dest, '_layouts');
+    const stylesDir = join(dest, '_styles');
+    mkdirSync(layoutsDir, { recursive: true });
+    mkdirSync(stylesDir, { recursive: true });
+    for (const f of ['page.html', 'index.html', 'tags.html']) {
+      copyFileSync(join(PACKAGE_DIR, 'layouts', f), join(layoutsDir, f));
+    }
+    copyFileSync(join(PACKAGE_DIR, 'styles', 'style.css'), join(stylesDir, 'style.css'));
+    console.log(`Theme files initialized in ${dest}`);
+    break;
+  }
   default:
     printUsage();
     process.exit(args.command ? 1 : 0);

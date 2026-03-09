@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { parse as parseYaml } from 'yaml';
 import { buildGraph, buildBacklinks } from './graph.js';
 import { buildPage, buildIndex, buildTagsPage } from './render.js';
-const PACKAGE_DIR = resolve(fileURLToPath(import.meta.url), '..', '..');
+export const PACKAGE_DIR = resolve(fileURLToPath(import.meta.url), '..', '..');
 export function loadConfig(source) {
     const config = { title: basename(source), subtitle: '', lang: 'en', 'content-directory': 'content', 'output-directory': 'public' };
     const configPath = join(source, 'site.yaml');
@@ -68,6 +68,12 @@ export function scanVault(source, contentDirectory) {
     }
     return pages;
 }
+function resolveTemplate(source, name) {
+    const userPath = join(source, '_layouts', name);
+    const defaultPath = join(PACKAGE_DIR, 'layouts', name);
+    const templatePath = existsSync(userPath) ? userPath : defaultPath;
+    return readFileSync(templatePath, 'utf-8');
+}
 export function build(options) {
     const source = resolve(options.source);
     const config = loadConfig(source);
@@ -77,10 +83,10 @@ export function build(options) {
     const output = resolve(source, config['output-directory']);
     console.log(`Source: ${source}`);
     console.log(`Output: ${output}`);
-    // Load templates
-    const pageTemplate = readFileSync(join(PACKAGE_DIR, 'layouts', 'page.html'), 'utf-8');
-    const indexTemplate = readFileSync(join(PACKAGE_DIR, 'layouts', 'index.html'), 'utf-8');
-    const tagsTemplate = readFileSync(join(PACKAGE_DIR, 'layouts', 'tags.html'), 'utf-8');
+    // Load templates (user overrides in _layouts/ take precedence)
+    const pageTemplate = resolveTemplate(source, 'page.html');
+    const indexTemplate = resolveTemplate(source, 'index.html');
+    const tagsTemplate = resolveTemplate(source, 'tags.html');
     // Scan vault
     const pages = scanVault(source, config['content-directory']);
     console.log(`Found ${pages.size} pages`);
@@ -101,7 +107,17 @@ export function build(options) {
     // Generate tags page
     const tagsHtml = buildTagsPage(pages, tagsTemplate, config);
     writeFileSync(join(output, 'tags.html'), tagsHtml, 'utf-8');
-    // Copy static files
-    copyFileSync(join(PACKAGE_DIR, 'styles', 'style.css'), join(output, 'style.css'));
+    // Copy static files (user overrides in _styles/ take precedence)
+    const userStylesDir = join(source, '_styles');
+    if (existsSync(userStylesDir)) {
+        for (const file of readdirSync(userStylesDir)) {
+            if (extname(file) === '.css') {
+                copyFileSync(join(userStylesDir, file), join(output, file));
+            }
+        }
+    }
+    else {
+        copyFileSync(join(PACKAGE_DIR, 'styles', 'style.css'), join(output, 'style.css'));
+    }
     console.log(`Generated ${pages.size} pages + index.html → ${output}`);
 }
