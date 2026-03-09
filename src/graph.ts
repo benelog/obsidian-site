@@ -72,6 +72,42 @@ export function buildGraph(pages: Map<string, PageInfo>): GraphData {
   return { nodes, links: edges };
 }
 
+export function buildLocalGraph(centerStem: string, fullGraph: GraphData): GraphData {
+  // Build adjacency map
+  const adj = new Map<string, Set<string>>();
+  for (const link of fullGraph.links) {
+    if (!adj.has(link.source)) adj.set(link.source, new Set());
+    if (!adj.has(link.target)) adj.set(link.target, new Set());
+    adj.get(link.source)!.add(link.target);
+    adj.get(link.target)!.add(link.source);
+  }
+
+  // BFS depth 2
+  const visited = new Set<string>();
+  const queue: { id: string; depth: number }[] = [{ id: centerStem, depth: 0 }];
+  visited.add(centerStem);
+
+  while (queue.length > 0) {
+    const { id, depth } = queue.shift()!;
+    if (depth >= 2) continue;
+    for (const neighbor of adj.get(id) || []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push({ id: neighbor, depth: depth + 1 });
+      }
+    }
+  }
+
+  // Center alone → empty
+  if (visited.size <= 1) return { nodes: [], links: [] };
+
+  const nodeSet = visited;
+  const nodes = fullGraph.nodes.filter(n => nodeSet.has(n.id));
+  const links = fullGraph.links.filter(l => nodeSet.has(l.source) && nodeSet.has(l.target));
+
+  return { nodes, links };
+}
+
 export function buildBacklinks(pages: Map<string, PageInfo>): Map<string, string[]> {
   const backlinks = new Map<string, Set<string>>();
   for (const stem of pages.keys()) {

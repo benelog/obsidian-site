@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractWikilinks, buildGraph, buildBacklinks } from '../src/graph.js';
+import { extractWikilinks, buildGraph, buildBacklinks, buildLocalGraph } from '../src/graph.js';
 import type { PageInfo } from '../src/types.js';
 
 function pages(entries: Record<string, string>): Map<string, PageInfo> {
@@ -68,6 +68,46 @@ describe('buildGraph', () => {
     const p = pages({ 'my-page': '' });
     const graph = buildGraph(p);
     expect(graph.nodes[0].title).toBe('my page');
+  });
+});
+
+describe('buildLocalGraph', () => {
+  it('returns nodes within depth 2 from center', () => {
+    // a - b - c - d (linear chain)
+    const p = pages({ a: '[[b]]', b: '[[c]]', c: '[[d]]', d: '' });
+    const full = buildGraph(p);
+    const local = buildLocalGraph('a', full);
+    const ids = local.nodes.map(n => n.id).sort();
+    // depth 0: a, depth 1: b, depth 2: c — d is depth 3, excluded
+    expect(ids).toEqual(['a', 'b', 'c']);
+  });
+
+  it('returns empty when center has no connections', () => {
+    const p = pages({ a: '', b: '[[c]]', c: '' });
+    const full = buildGraph(p);
+    const local = buildLocalGraph('a', full);
+    expect(local).toEqual({ nodes: [], links: [] });
+  });
+
+  it('includes edges between collected nodes only', () => {
+    // a - b - c, b - d
+    const p = pages({ a: '[[b]]', b: '[[c]] [[d]]', c: '', d: '' });
+    const full = buildGraph(p);
+    const local = buildLocalGraph('a', full);
+    const ids = local.nodes.map(n => n.id).sort();
+    expect(ids).toEqual(['a', 'b', 'c', 'd']);
+    // All edges among a,b,c,d should be included
+    expect(local.links.length).toBe(3); // a-b, b-c, b-d
+  });
+
+  it('does not include nodes beyond depth 2', () => {
+    // a - b - c - d - e
+    const p = pages({ a: '[[b]]', b: '[[c]]', c: '[[d]]', d: '[[e]]', e: '' });
+    const full = buildGraph(p);
+    const local = buildLocalGraph('a', full);
+    const ids = local.nodes.map(n => n.id).sort();
+    expect(ids).toEqual(['a', 'b', 'c']);
+    expect(local.links.length).toBe(2); // a-b, b-c
   });
 });
 

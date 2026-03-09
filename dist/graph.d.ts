@@ -17,4 +17,5 @@ export interface GraphData {
 }
 export declare function extractWikilinks(content: string): string[];
 export declare function buildGraph(pages: Map<string, PageInfo>): GraphData;
+export declare function buildLocalGraph(centerStem: string, fullGraph: GraphData): GraphData;
 export declare function buildBacklinks(pages: Map<string, PageInfo>): Map<string, string[]>;

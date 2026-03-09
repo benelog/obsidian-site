@@ -575,6 +575,26 @@ body {
   text-decoration: none;
 }
 
+/* Page graph (sidebar) */
+.page-graph {
+  background: var(--color-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+
+.page-graph-container {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-graph-bg);
+}
+
+.page-graph-container svg {
+  display: block;
+}
+
 /* Wikilink styling */
 .wikilink {
   color: var(--color-primary);

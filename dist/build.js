@@ -91,7 +91,7 @@ export function build(options) {
     mkdirSync(output, { recursive: true });
     // Generate pages
     for (const stem of pages.keys()) {
-        const html = buildPage(stem, pages, backlinks, pageTemplate, config);
+        const html = buildPage(stem, pages, backlinks, pageTemplate, config, graphData);
         writeFileSync(join(output, `${stem}.html`), html, 'utf-8');
     }
     // Generate index
