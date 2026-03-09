@@ -1,6 +1,6 @@
 {
   "name": "obsidian-site",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Build a static website from an Obsidian vault",
   "type": "module",
   "bin": {
@@ -26,6 +26,10 @@
     "typescript": "^5.0.0",
     "vitest": "^3.0.0"
   },
-  "keywords": ["obsidian", "static-site-generator", "markdown"],
+  "keywords": [
+    "obsidian",
+    "static-site-generator",
+    "markdown"
+  ],
   "license": "MIT"
 }
