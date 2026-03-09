@@ -58,7 +58,9 @@
     // Scale node size by connection count
     const maxCount = d3.max(data.nodes, d => d.count) || 1;
     const nodeRadius = d => 3 + (d.count / maxCount) * 10;
-    const nodeColor = d3.scaleSequential(d3.interpolateBlues).domain([0, maxCount]);
+
+    // Green-based color scale
+    const nodeColor = d3.scaleSequential(d3.interpolateGreens).domain([-1, maxCount]);
 
     const size = Math.min(width, height);
 
@@ -76,7 +78,7 @@
       .data(data.links)
       .join('line')
       .attr('stroke', '#ccc')
-      .attr('stroke-width', 0.5);
+      .attr('stroke-width', 0.8);
 
     const node = g.append('g')
       .attr('class', 'nodes')
@@ -86,7 +88,7 @@
       .attr('r', nodeRadius)
       .attr('fill', d => d.count > 0 ? nodeColor(d.count) : '#ddd')
       .attr('stroke', '#fff')
-      .attr('stroke-width', 1)
+      .attr('stroke-width', 1.5)
       .style('cursor', 'pointer')
       .on('click', (event, d) => { window.location.href = d.id + '.html'; })
       .call(d3.drag()
@@ -96,6 +98,36 @@
 
     node.append('title').text(d => d.title);
 
+    // Build adjacency index for hover highlight
+    const linkedById = new Set();
+    data.links.forEach(d => {
+      const s = typeof d.source === 'object' ? d.source.id : d.source;
+      const t = typeof d.target === 'object' ? d.target.id : d.target;
+      linkedById.add(s + ',' + t);
+    });
+
+    function isConnected(a, b) {
+      return a.id === b.id
+        || linkedById.has(a.id + ',' + b.id)
+        || linkedById.has(b.id + ',' + a.id);
+    }
+
+    node.on('mouseenter', (event, d) => {
+      node.attr('opacity', o => isConnected(d, o) ? 1 : 0.15);
+      link
+        .attr('stroke', l => (l.source.id === d.id || l.target.id === d.id) ? '#03C75A' : '#ccc')
+        .attr('stroke-width', l => (l.source.id === d.id || l.target.id === d.id) ? 1.8 : 0.3)
+        .attr('opacity', l => (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.15);
+      labels.style('opacity', o => isConnected(d, o) ? 1 : 0);
+    });
+
+    node.on('mouseleave', () => {
+      node.attr('opacity', 1);
+      link.attr('stroke', '#ccc').attr('stroke-width', 0.8).attr('opacity', 1);
+      const k = d3.zoomTransform(svg.node()).k;
+      updateLabels(k);
+    });
+
     const labels = g.append('g')
       .attr('class', 'labels')
       .selectAll('text')
@@ -103,6 +135,7 @@
       .join('text')
       .text(d => d.title)
       .attr('font-size', d => 8 + (d.count / maxCount) * 8)
+      .attr('fill', '#666')
       .attr('dx', d => nodeRadius(d) + 2)
       .attr('dy', 3)
       .style('pointer-events', 'none')
