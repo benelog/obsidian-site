@@ -41,9 +41,13 @@ npm test             # vitest run
 - `bin` field maps `obsidian-site` to `dist/cli.js`
 - For GitHub Action releases, tag the commit (e.g., `v0.1.0`) and update the major version tag (`v0`)
 
+## Git Conventions
+
+- Do not use conventional commit prefixes (e.g., `feat:`, `fix:`, `chore:`). Start commit messages with a plain description.
+
 ## Conventions
 
-- Flat content directory — no nested folders, all `.md` files at one level
+- Content directory supports nested folders — all `.md` files are scanned recursively
 - Filename = page title (hyphens replaced with spaces)
 - `## Related` section in notes is parsed out and rendered in the sidebar
 - Backlinks are auto-generated (reverse wikilink index)
