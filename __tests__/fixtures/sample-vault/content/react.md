@@ -1,5 +1,8 @@
 ---
 title: React
+tags:
+  - programming
+  - frontend
 ---
 
 React is a [[javascript]] library for building user interfaces.

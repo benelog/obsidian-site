@@ -120,6 +120,20 @@ Options:
 - A `## Related` section in your note is extracted and rendered in the sidebar
 - Backlinks (pages that link to the current page) are automatically generated in the sidebar
 
+### Tags
+
+- Add tags via YAML frontmatter or inline `#tag` syntax in the body:
+  ```yaml
+  ---
+  tags: [programming, web]
+  ---
+  ```
+  ```markdown
+  This note is about #javascript and #frontend development.
+  ```
+- Tags from both sources are merged and displayed as clickable pills on each page
+- Clicking a tag navigates to the Tags page (`tags.html#tag-{name}`), which lists all pages grouped by tag
+
 ### Edit Link
 
 If `gitHub.repository-url` and `gitHub.content-branch` are set in `site.yaml`, each page includes an "Edit" link that opens the source Markdown file directly on GitHub for editing.

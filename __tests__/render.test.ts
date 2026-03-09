@@ -5,13 +5,16 @@ import {
   processWikilinks,
   renderRelated,
   renderBacklinks,
+  renderTags,
+  extractTags,
+  buildTagsPage,
 } from '../src/render.js';
 import type { PageInfo } from '../src/types.js';
 
-function pages(entries: Record<string, string>): Map<string, PageInfo> {
+function pages(entries: Record<string, string>, tagMap?: Record<string, string[]>): Map<string, PageInfo> {
   const map = new Map<string, PageInfo>();
   for (const [stem, content] of Object.entries(entries)) {
-    map.set(stem, { path: `${stem}.md`, title: stem.replace(/-/g, ' '), content });
+    map.set(stem, { path: `${stem}.md`, title: stem.replace(/-/g, ' '), content, tags: tagMap?.[stem] || [] });
   }
   return map;
 }
@@ -124,5 +127,78 @@ describe('renderBacklinks', () => {
   it('returns empty string for unknown stem', () => {
     const bl = new Map<string, string[]>();
     expect(renderBacklinks('unknown', bl, pages({}))).toBe('');
+  });
+});
+
+describe('renderTags', () => {
+  it('returns empty string for no tags', () => {
+    expect(renderTags([])).toBe('');
+  });
+
+  it('renders tags with links to tags page', () => {
+    const result = renderTags(['programming', 'web']);
+    expect(result).toContain('class="page-tags"');
+    expect(result).toContain('<a href="tags.html#tag-programming" class="page-tag">#programming</a>');
+    expect(result).toContain('<a href="tags.html#tag-web" class="page-tag">#web</a>');
+  });
+
+  it('renders single tag', () => {
+    const result = renderTags(['solo']);
+    expect(result).toContain('class="page-tags"');
+    expect(result).toContain('tags.html#tag-solo');
+  });
+});
+
+describe('extractTags', () => {
+  it('collects tags from all pages', () => {
+    const p = pages({ foo: '', bar: '' }, { foo: ['a', 'b'], bar: ['b', 'c'] });
+    const tagMap = extractTags(p);
+    expect(tagMap.get('a')).toEqual(['foo']);
+    expect(tagMap.get('b')!.sort()).toEqual(['bar', 'foo']);
+    expect(tagMap.get('c')).toEqual(['bar']);
+  });
+
+  it('returns empty map when no tags', () => {
+    const p = pages({ foo: '' });
+    const tagMap = extractTags(p);
+    expect(tagMap.size).toBe(0);
+  });
+});
+
+describe('buildTagsPage', () => {
+  const template = '<html lang="{lang}"><title>{title} — {site_title}</title><div>{tag_count}</div><ul>{tag_list}</ul><div>{tag_sections}</div></html>';
+  const config = { title: 'Test', subtitle: '', lang: 'en', 'content-directory': 'content', 'output-directory': 'public' };
+
+  it('renders tag list with counts', () => {
+    const p = pages({ foo: '', bar: '' }, { foo: ['web'], bar: ['web', 'dev'] });
+    const html = buildTagsPage(p, template, config);
+    expect(html).toContain('Tags');
+    expect(html).toContain('web');
+    expect(html).toContain('dev');
+    expect(html).toContain('(2)'); // web: 2 pages
+    expect(html).toContain('(1)'); // dev: 1 page
+  });
+
+  it('renders tag sections with page links', () => {
+    const p = pages({ foo: '', bar: '' }, { foo: ['web'], bar: ['web'] });
+    const html = buildTagsPage(p, template, config);
+    expect(html).toContain('id="tag-web"');
+    expect(html).toContain('foo.html');
+    expect(html).toContain('bar.html');
+  });
+
+  it('sorts tags alphabetically', () => {
+    const p = pages({ a: '' }, { a: ['zoo', 'alpha'] });
+    const html = buildTagsPage(p, template, config);
+    const alphaPos = html.indexOf('alpha');
+    const zooPos = html.indexOf('zoo');
+    expect(alphaPos).toBeLessThan(zooPos);
+  });
+
+  it('handles no tags gracefully', () => {
+    const p = pages({ foo: '' });
+    const html = buildTagsPage(p, template, config);
+    expect(html).not.toContain('{title}'); // title replaced
+    expect(html).toContain('0'); // tag_count = 0
   });
 });

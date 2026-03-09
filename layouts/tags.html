@@ -14,20 +14,19 @@
     <a href="tags.html" class="nav-tags">Tags</a>
   </nav>
 
-  <div class="page-layout">
-    <main class="content">
-      <div class="content-header">
-        <h1>{title}</h1>
-        {edit_link}
+  <div class="tags-layout">
+    <section class="tag-summary">
+      <div class="tag-summary-header">
+        <h2>Tags <span class="tag-total-count">({tag_count})</span></h2>
       </div>
-      {tags}
-      {body}
-    </main>
+      <ul class="tag-list">
+        {tag_list}
+      </ul>
+    </section>
 
-    <aside class="sidebar">
-      {related}
-      {backlinks}
-    </aside>
+    <section class="tag-details">
+      {tag_sections}
+    </section>
   </div>
 </body>
 </html>

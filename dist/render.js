@@ -59,6 +59,12 @@ export function renderEditLink(stem, contentDirectory, gitHub) {
     const url = `${gitHub['repository-url']}/edit/${branch}/${contentDirectory}/${stem}.md`;
     return `<a href="${url}" class="edit-link" target="_blank" rel="noopener noreferrer">Edit</a>`;
 }
+export function renderTags(tags) {
+    if (tags.length === 0)
+        return '';
+    const items = tags.map(tag => `<a href="tags.html#tag-${tag}" class="page-tag">#${tag}</a>`);
+    return `<div class="page-tags">${items.join('\n')}</div>`;
+}
 export function buildPage(stem, pages, backlinks, template, config) {
     const page = pages.get(stem);
     const content = page.content;
@@ -71,6 +77,7 @@ export function buildPage(stem, pages, backlinks, template, config) {
     const relatedHtml = renderRelated(wikilinks, pages);
     const backlinksHtml = renderBacklinks(stem, backlinks, pages);
     const editLinkHtml = renderEditLink(stem, config['content-directory'], config.gitHub);
+    const tagsHtml = renderTags(page.tags);
     return template
         .replaceAll('{title}', title)
         .replaceAll('{site_title}', config.title)
@@ -78,7 +85,53 @@ export function buildPage(stem, pages, backlinks, template, config) {
         .replaceAll('{body}', htmlBody)
         .replaceAll('{related}', relatedHtml)
         .replaceAll('{backlinks}', backlinksHtml)
-        .replaceAll('{edit_link}', editLinkHtml);
+        .replaceAll('{edit_link}', editLinkHtml)
+        .replaceAll('{tags}', tagsHtml);
+}
+export function extractTags(pages) {
+    const tagMap = new Map();
+    for (const [stem, page] of pages) {
+        for (const tag of page.tags) {
+            const list = tagMap.get(tag);
+            if (list) {
+                list.push(stem);
+            }
+            else {
+                tagMap.set(tag, [stem]);
+            }
+        }
+    }
+    return tagMap;
+}
+export function buildTagsPage(pages, template, config) {
+    const tagMap = extractTags(pages);
+    const sortedTags = [...tagMap.keys()].sort((a, b) => a.localeCompare(b));
+    // Tag list (top summary)
+    const tagListItems = sortedTags.map(tag => {
+        const count = tagMap.get(tag).length;
+        return `<li><a href="#tag-${tag}" class="tag-link">#${tag}</a> <span class="tag-count">(${count})</span></li>`;
+    });
+    const tagListHtml = tagListItems.join('\n');
+    // Tag sections (detail)
+    const tagSections = sortedTags.map(tag => {
+        const stems = tagMap.get(tag).sort();
+        const pageItems = stems.map(stem => {
+            const title = pages.get(stem).title;
+            return `<li><a href="${stem}.html">${title}</a></li>`;
+        }).join('\n');
+        return `<section id="tag-${tag}" class="tag-section">
+<h2>#${tag}</h2>
+<ul>${pageItems}</ul>
+</section>`;
+    });
+    const tagSectionsHtml = tagSections.join('\n');
+    return template
+        .replaceAll('{title}', 'Tags')
+        .replaceAll('{site_title}', config.title)
+        .replaceAll('{lang}', config.lang)
+        .replaceAll('{tag_list}', tagListHtml)
+        .replaceAll('{tag_sections}', tagSectionsHtml)
+        .replaceAll('{tag_count}', String(sortedTags.length));
 }
 export function buildIndex(graphData, pages, template, config) {
     const pageListItems = [];

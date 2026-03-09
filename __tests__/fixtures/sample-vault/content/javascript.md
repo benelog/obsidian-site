@@ -1,5 +1,8 @@
 ---
 title: JavaScript
+tags:
+  - programming
+  - web
 ---
 
 JavaScript is a programming language used for web development.

@@ -81,6 +81,57 @@ describe('build integration', () => {
       const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
       expect(html).toContain('https://github.com/example/sample-vault');
     });
+
+    it('displays tags on page with links to tags page', () => {
+      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
+      expect(html).toContain('class="page-tags"');
+      expect(html).toContain('<a href="tags.html#tag-programming" class="page-tag">#programming</a>');
+      expect(html).toContain('<a href="tags.html#tag-web" class="page-tag">#web</a>');
+    });
+
+    it('does not render tags div when page has no tags', () => {
+      const html = readFileSync(join(OUTPUT_DIR, 'standalone.html'), 'utf-8');
+      expect(html).not.toContain('class="page-tags"');
+    });
+  });
+
+  describe('tags page', () => {
+    it('generates tags.html', () => {
+      expect(existsSync(join(OUTPUT_DIR, 'tags.html'))).toBe(true);
+    });
+
+    it('contains tags from frontmatter', () => {
+      const html = readFileSync(join(OUTPUT_DIR, 'tags.html'), 'utf-8');
+      expect(html).toContain('programming');
+      expect(html).toContain('web');
+      expect(html).toContain('frontend');
+    });
+
+    it('lists pages under each tag', () => {
+      const html = readFileSync(join(OUTPUT_DIR, 'tags.html'), 'utf-8');
+      expect(html).toContain('javascript.html');
+      expect(html).toContain('react.html');
+    });
+
+    it('shows tag count', () => {
+      const html = readFileSync(join(OUTPUT_DIR, 'tags.html'), 'utf-8');
+      // programming tag has 3 pages (javascript, react, typescript)
+      expect(html).toContain('(3)');
+    });
+  });
+
+  describe('nav tags link', () => {
+    it('page.html contains Tags link', () => {
+      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
+      expect(html).toContain('href="tags.html"');
+      expect(html).toContain('class="nav-tags"');
+    });
+
+    it('index.html contains Tags link', () => {
+      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
+      expect(html).toContain('href="tags.html"');
+      expect(html).toContain('class="nav-tags"');
+    });
   });
 
   describe('index page', () => {

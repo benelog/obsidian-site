@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { parse as parseYaml } from 'yaml';
 
 import { buildGraph, buildBacklinks } from './graph.js';
-import { buildPage, buildIndex } from './render.js';
+import { buildPage, buildIndex, buildTagsPage } from './render.js';
 import type { PageInfo, SiteConfig } from './types.js';
 
 const PACKAGE_DIR = resolve(fileURLToPath(import.meta.url), '..', '..');
@@ -38,6 +38,7 @@ export function scanVault(source: string, contentDirectory: string): Map<string,
     const raw = readFileSync(filePath, 'utf-8');
     let title = stem.replace(/-/g, ' ');
     let content = raw;
+    const tags = new Set<string>();
 
     const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     if (fmMatch) {
@@ -45,10 +46,29 @@ export function scanVault(source: string, contentDirectory: string): Map<string,
       if (fm && typeof fm.title === 'string') {
         title = fm.title;
       }
+      if (fm && Array.isArray(fm.tags)) {
+        for (const t of fm.tags) {
+          if (typeof t === 'string') tags.add(t);
+        }
+      }
       content = raw.slice(fmMatch[0].length).replace(/^\r?\n/, '');
     }
 
-    pages.set(stem, { path: filePath, title, content });
+    // Extract inline #tags from body (skip headings, code blocks, wikilinks)
+    let inCodeBlock = false;
+    for (const line of content.split('\n')) {
+      if (line.startsWith('```')) { inCodeBlock = !inCodeBlock; continue; }
+      if (inCodeBlock) continue;
+      if (/^#{1,6}\s/.test(line)) continue;
+      // Match #tag patterns, excluding inside wikilinks
+      const withoutWikilinks = line.replace(/\[\[[^\]]*\]\]/g, '');
+      const matches = withoutWikilinks.matchAll(/(?:^|\s)#([a-zA-Z\uAC00-\uD7AF\u3131-\u318E][a-zA-Z0-9\uAC00-\uD7AF\u3131-\u318E_-]*)/g);
+      for (const m of matches) {
+        tags.add(m[1]);
+      }
+    }
+
+    pages.set(stem, { path: filePath, title, content, tags: [...tags] });
   }
   return pages;
 }
@@ -72,6 +92,7 @@ export function build(options: BuildOptions): void {
   // Load templates
   const pageTemplate = readFileSync(join(PACKAGE_DIR, 'layouts', 'page.html'), 'utf-8');
   const indexTemplate = readFileSync(join(PACKAGE_DIR, 'layouts', 'index.html'), 'utf-8');
+  const tagsTemplate = readFileSync(join(PACKAGE_DIR, 'layouts', 'tags.html'), 'utf-8');
 
   // Scan vault
   const pages = scanVault(source, config['content-directory']);
@@ -94,6 +115,10 @@ export function build(options: BuildOptions): void {
   // Generate index
   const indexHtml = buildIndex(graphData, pages, indexTemplate, config);
   writeFileSync(join(output, 'index.html'), indexHtml, 'utf-8');
+
+  // Generate tags page
+  const tagsHtml = buildTagsPage(pages, tagsTemplate, config);
+  writeFileSync(join(output, 'tags.html'), tagsHtml, 'utf-8');
 
   // Copy static files
   copyFileSync(join(PACKAGE_DIR, 'styles', 'style.css'), join(output, 'style.css'));

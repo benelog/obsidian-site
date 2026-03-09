@@ -10,5 +10,8 @@ export declare function downgradeHeadings(html: string): string;
 export declare function renderRelated(wikilinks: string[], pages: Map<string, PageInfo>): string;
 export declare function renderBacklinks(stem: string, backlinks: Map<string, string[]>, pages: Map<string, PageInfo>): string;
 export declare function renderEditLink(stem: string, contentDirectory: string, gitHub?: GitHubConfig): string;
+export declare function renderTags(tags: string[]): string;
 export declare function buildPage(stem: string, pages: Map<string, PageInfo>, backlinks: Map<string, string[]>, template: string, config: SiteConfig): string;
+export declare function extractTags(pages: Map<string, PageInfo>): Map<string, string[]>;
+export declare function buildTagsPage(pages: Map<string, PageInfo>, template: string, config: SiteConfig): string;
 export declare function buildIndex(graphData: GraphData, pages: Map<string, PageInfo>, template: string, config: SiteConfig): string;

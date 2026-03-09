@@ -3,6 +3,7 @@ export interface PageInfo {
     path: string;
     title: string;
     content: string;
+    tags: string[];
 }
 export interface GitHubConfig {
     'repository-url': string;
