@@ -105,7 +105,7 @@ Options:
 
 ### Notes
 
-- All `.md` files in the content directory become pages
+- All `.md` files in the content directory (including nested subdirectories) become pages
 - The filename becomes the page title (`spring-boot` -> "spring boot")
 - Headings are downgraded by one level (`#` -> `##`, `##` -> `###`) since the filename is rendered as `<h1>`
 
@@ -137,6 +137,20 @@ Options:
 ### Edit Link
 
 If `gitHub.repository-url` and `gitHub.content-branch` are set in `site.yaml`, each page includes an "Edit" link that opens the source Markdown file directly on GitHub for editing.
+
+### Local Graph
+
+Each page displays a local graph in the sidebar, showing connections up to 2 levels deep from the current page.
+
+### Custom Layouts and Styles
+
+You can override the default HTML templates and CSS by placing files in your vault:
+
+- `_layouts/page.html` — Custom template for individual pages
+- `_layouts/index.html` — Custom template for the index page
+- `_styles/style.css` — Custom stylesheet
+
+Files in `_layouts/` and `_styles/` take precedence over the built-in defaults.
 
 ### Index Page
 
