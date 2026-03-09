@@ -89,11 +89,16 @@ Setting `gitHub.repository-url` and `gitHub.content-branch` adds an "Edit" link 
 ## CLI Reference
 
 ```
-obsidian-site build [options]
+obsidian-site <command> [options]
+
+Commands:
+  build              Build the static site
+  serve (server)     Build and start a local preview server
 
 Options:
-  --source <path>   Path to the Obsidian vault (default: current directory)
-  --output <path>   Output directory (overrides site.yaml setting)
+  --source <path>    Path to the Obsidian vault (default: current directory)
+  --output <path>    Output directory (overrides site.yaml setting)
+  --port <number>    Port for the preview server (default: 8000)
 ```
 
 ## How It Works
@@ -128,8 +133,7 @@ The index page includes:
 ## Local Preview
 
 ```bash
-npx obsidian-site build --source /path/to/vault
-python3 -m http.server 8000 -d /path/to/vault/public
+npx obsidian-site serve --source /path/to/vault
 ```
 
 ## Template Repository
