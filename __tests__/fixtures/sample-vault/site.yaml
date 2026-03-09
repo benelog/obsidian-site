@@ -1,0 +1,8 @@
+title: Sample Site
+subtitle: A test site for integration testing
+lang: en
+content-directory: content
+output-directory: public
+gitHub:
+  repository-url: https://github.com/example/sample-vault
+  content-branch: main
