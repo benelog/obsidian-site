@@ -13,8 +13,9 @@ src/
   types.ts      — Shared types and constants (WIKILINK_RE, PageInfo, SiteConfig)
   graph.ts      — Graph/link analysis (extractWikilinks, buildGraph, buildBacklinks)
   render.ts     — HTML rendering (convertMarkdown, processWikilinks, buildPage, buildIndex)
+  serve.ts      — Local development server for previewing the built site
 __tests__/      — Test files (*.test.ts)
-layouts/        — HTML templates (page.html, index.html) with {placeholder} syntax
+layouts/        — HTML templates (page.html, index.html, tags.html) with {placeholder} syntax
 styles/         — CSS (style.css)
 dist/           — Compiled JS output (gitignored)
 action.yml      — GitHub Action definition (composite, runs dist/cli.js)
@@ -37,8 +38,6 @@ npm test             # vitest run
 ## Publishing Checklist
 
 - `npm run build` must succeed before publish (`prepublishOnly` hook runs `tsc`)
-- `package.json` `files` field includes `dist/`, `layouts/`, `styles/`
-- `bin` field maps `obsidian-site` to `dist/cli.js`
 - For GitHub Action releases, tag the commit (e.g., `v0.1.0`) and update the major version tag (`v0`)
 
 ## Git Conventions
