@@ -138,8 +138,7 @@
       .attr('fill', '#666')
       .attr('dx', d => nodeRadius(d) + 2)
       .attr('dy', 3)
-      .style('pointer-events', 'none')
-      .style('opacity', 0);
+      .style('pointer-events', 'none');
 
     function updateLabels(k) {
       labels.style('opacity', d => {
@@ -149,6 +148,7 @@
         return 0;
       });
     }
+    updateLabels(1);
 
     simulation.on('tick', () => {
       link
