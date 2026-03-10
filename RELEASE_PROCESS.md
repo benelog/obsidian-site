@@ -44,6 +44,10 @@ git push origin v1 --force
 gh release create vx.y.z --title "vx.y.z" --notes "Release notes here"
 ```
 
+## Release Notes
+
+Only include user-facing changes (bug fixes, new features, behavior changes). Exclude internal refactoring, documentation updates, and CI/config changes.
+
 ## Order
 
 npm publish before git tagging. If the build or publish fails, there's no tag to revert.
