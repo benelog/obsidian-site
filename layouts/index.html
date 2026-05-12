@@ -134,18 +134,17 @@
       .data(data.nodes)
       .join('text')
       .text(d => d.title)
-      .attr('font-size', d => 8 + (d.count / maxCount) * 8)
-      .attr('fill', '#666')
+      .attr('font-size', 10)
+      .attr('fill', '#444')
       .attr('dx', d => nodeRadius(d) + 2)
       .attr('dy', 3)
       .style('pointer-events', 'none');
 
     function updateLabels(k) {
       labels.style('opacity', d => {
-        if (k > 2) return 1;
-        if (k > 1.2) return d.count >= maxCount * 0.3 ? 1 : 0;
-        if (k > 0.8) return d.count >= maxCount * 0.6 ? 1 : 0;
-        return 0;
+        if (k >= 0.8) return 1;
+        if (k >= 0.5) return d.count >= maxCount * 0.3 ? 1 : 0;
+        return d.count >= maxCount * 0.6 ? 1 : 0;
       });
     }
     updateLabels(1);
