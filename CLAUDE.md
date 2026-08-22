@@ -17,7 +17,7 @@ src/
 __tests__/      — Test files (*.test.ts)
 layouts/        — HTML templates (page.html, index.html, tags.html) with {placeholder} syntax
 styles/         — CSS (style.css)
-dist/           — Compiled JS output (gitignored)
+dist/           — Compiled JS output (committed; the GitHub Action runs it directly from the tagged commit)
 action.yml      — GitHub Action definition (composite, runs dist/cli.js)
 ```
 
