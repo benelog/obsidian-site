@@ -330,6 +330,15 @@ body {
   border: none;
 }
 
+.content th a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.content th a:hover {
+  color: #ffffff;
+}
+
 .content td {
   padding: 12px 20px;
   border-bottom: 1px solid var(--color-table-border);
