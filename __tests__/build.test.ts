@@ -1,227 +1,213 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync, mkdtempSync, cpSync } from 'fs';
 import { join } from 'path';
-import { build } from '../src/build.js';
+import { tmpdir } from 'os';
+import { build, type BuildResult } from '../src/build.js';
 
 const FIXTURE_DIR = join(import.meta.dirname, 'fixtures', 'sample-vault');
-const OUTPUT_DIR = join(FIXTURE_DIR, 'public');
+
+/** Copy the sample vault into a fresh temp directory so tests never share state. */
+function makeVault(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'obsidian-site-'));
+  cpSync(FIXTURE_DIR, dir, { recursive: true });
+  return dir;
+}
+
+function readOutput(result: BuildResult, name: string): string {
+  return readFileSync(join(result.output, name), 'utf-8');
+}
 
 describe('build integration', () => {
+  let vault: string;
+  let result: BuildResult;
+
   beforeAll(() => {
-    build({ source: FIXTURE_DIR });
+    vault = makeVault();
+    result = build({ source: vault });
   });
 
   afterAll(() => {
-    rmSync(OUTPUT_DIR, { recursive: true, force: true });
+    rmSync(vault, { recursive: true, force: true });
+  });
+
+  it('writes output under the configured output directory', () => {
+    expect(result.output).toBe(join(vault, 'public'));
+  });
+
+  it('reports counts', () => {
+    expect(result.pageCount).toBe(6);
+    expect(result.nodeCount).toBe(6);
+    expect(result.edgeCount).toBeGreaterThan(0);
   });
 
   it('generates HTML files for each markdown page', () => {
-    expect(existsSync(join(OUTPUT_DIR, 'javascript.html'))).toBe(true);
-    expect(existsSync(join(OUTPUT_DIR, 'typescript.html'))).toBe(true);
-    expect(existsSync(join(OUTPUT_DIR, 'react.html'))).toBe(true);
-    expect(existsSync(join(OUTPUT_DIR, 'standalone.html'))).toBe(true);
+    for (const name of ['javascript', 'typescript', 'react', 'standalone']) {
+      expect(existsSync(join(result.output, `${name}.html`))).toBe(true);
+    }
   });
 
-  it('generates index.html', () => {
-    expect(existsSync(join(OUTPUT_DIR, 'index.html'))).toBe(true);
+  it('generates index.html and tags.html', () => {
+    expect(existsSync(join(result.output, 'index.html'))).toBe(true);
+    expect(existsSync(join(result.output, 'tags.html'))).toBe(true);
   });
 
   it('copies style.css', () => {
-    expect(existsSync(join(OUTPUT_DIR, 'style.css'))).toBe(true);
+    expect(existsSync(join(result.output, 'style.css'))).toBe(true);
   });
 
   describe('site config', () => {
-    it('applies site title from site.yaml', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
+    it('applies site title and subtitle from site.yaml', () => {
+      const html = readOutput(result, 'index.html');
       expect(html).toContain('Sample Site');
-    });
-
-    it('applies subtitle from site.yaml', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
       expect(html).toContain('A test site for integration testing');
     });
   });
 
   describe('page rendering', () => {
     it('uses frontmatter title as page heading', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
-      expect(html).toContain('<h1>JavaScript</h1>');
+      expect(readOutput(result, 'javascript.html')).toContain('<h1>JavaScript</h1>');
     });
 
     it('uses filename as title when no frontmatter title', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'standalone.html'), 'utf-8');
-      expect(html).toContain('<h1>standalone</h1>');
+      expect(readOutput(result, 'standalone.html')).toContain('<h1>standalone</h1>');
     });
 
     it('renders wikilinks as anchor tags', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
+      const html = readOutput(result, 'javascript.html');
       expect(html).toContain('<a href="typescript.html" class="wikilink">');
       expect(html).toContain('<a href="react.html" class="wikilink">');
     });
 
     it('renders broken wikilinks as spans', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'react.html'), 'utf-8');
-      expect(html).toContain('<span class="broken-link">missing page</span>');
+      expect(readOutput(result, 'react.html')).toContain('<span class="broken-link">missing page</span>');
     });
 
     it('renders Related section in sidebar', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
-      expect(html).toContain('class="related"');
+      expect(readOutput(result, 'javascript.html')).toContain('class="related"');
     });
 
     it('renders backlinks in sidebar', () => {
       // typescript is linked from both javascript and react
-      const html = readFileSync(join(OUTPUT_DIR, 'typescript.html'), 'utf-8');
+      const html = readOutput(result, 'typescript.html');
       expect(html).toContain('class="backlinks"');
       expect(html).toContain('javascript.html');
       expect(html).toContain('react.html');
     });
 
     it('renders edit link with GitHub config', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
-      expect(html).toContain('https://github.com/example/sample-vault');
+      expect(readOutput(result, 'javascript.html')).toContain('https://github.com/example/sample-vault');
     });
 
     it('displays tags on page with links to tags page', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
+      const html = readOutput(result, 'javascript.html');
       expect(html).toContain('class="page-tags"');
       expect(html).toContain('<a href="tags.html#tag-programming" class="page-tag">#programming</a>');
       expect(html).toContain('<a href="tags.html#tag-web" class="page-tag">#web</a>');
     });
 
     it('does not render tags div when page has no tags', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'standalone.html'), 'utf-8');
-      expect(html).not.toContain('class="page-tags"');
+      expect(readOutput(result, 'standalone.html')).not.toContain('class="page-tags"');
     });
   });
 
   describe('tags page', () => {
-    it('generates tags.html', () => {
-      expect(existsSync(join(OUTPUT_DIR, 'tags.html'))).toBe(true);
-    });
-
     it('contains tags from frontmatter', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'tags.html'), 'utf-8');
+      const html = readOutput(result, 'tags.html');
       expect(html).toContain('programming');
       expect(html).toContain('web');
       expect(html).toContain('frontend');
     });
 
     it('lists pages under each tag', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'tags.html'), 'utf-8');
+      const html = readOutput(result, 'tags.html');
       expect(html).toContain('javascript.html');
       expect(html).toContain('react.html');
     });
 
     it('shows tag count', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'tags.html'), 'utf-8');
       // programming tag has 3 pages (javascript, react, typescript)
-      expect(html).toContain('(3)');
+      expect(readOutput(result, 'tags.html')).toContain('(3)');
     });
   });
 
   describe('nav tags link', () => {
-    it('page.html contains Tags link', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
-      expect(html).toContain('href="tags.html"');
-      expect(html).toContain('class="nav-tags"');
-    });
-
-    it('index.html contains Tags link', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
-      expect(html).toContain('href="tags.html"');
-      expect(html).toContain('class="nav-tags"');
+    it('page.html and index.html contain Tags link', () => {
+      for (const name of ['javascript.html', 'index.html']) {
+        const html = readOutput(result, name);
+        expect(html).toContain('href="tags.html"');
+        expect(html).toContain('class="nav-tags"');
+      }
     });
   });
 
   describe('index page', () => {
     it('lists all pages', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
-      expect(html).toContain('javascript.html');
-      expect(html).toContain('typescript.html');
-      expect(html).toContain('react.html');
-      expect(html).toContain('standalone.html');
+      const html = readOutput(result, 'index.html');
+      for (const name of ['javascript', 'typescript', 'react', 'standalone']) {
+        expect(html).toContain(`${name}.html`);
+      }
     });
 
     it('includes graph data', () => {
-      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
+      const html = readOutput(result, 'index.html');
       expect(html).toContain('"nodes"');
       expect(html).toContain('"links"');
     });
   });
 });
 
-describe('custom theme override', () => {
-  const layoutsDir = join(FIXTURE_DIR, '_layouts');
-  const stylesDir = join(FIXTURE_DIR, '_styles');
+describe('output override', () => {
+  let vault: string;
+
+  beforeAll(() => {
+    vault = makeVault();
+  });
 
   afterAll(() => {
-    rmSync(OUTPUT_DIR, { recursive: true, force: true });
-    rmSync(layoutsDir, { recursive: true, force: true });
-    rmSync(stylesDir, { recursive: true, force: true });
+    rmSync(vault, { recursive: true, force: true });
   });
 
-  describe('layout override', () => {
-    afterAll(() => {
-      rmSync(OUTPUT_DIR, { recursive: true, force: true });
-      rmSync(layoutsDir, { recursive: true, force: true });
-    });
+  it('writes to --output instead of site.yaml output-directory', () => {
+    const result = build({ source: vault, output: 'dist-site' });
+    expect(result.output).toBe(join(vault, 'dist-site'));
+    expect(existsSync(join(vault, 'dist-site', 'index.html'))).toBe(true);
+    expect(existsSync(join(vault, 'public'))).toBe(false);
+  });
+});
 
-    it('uses custom page.html when present in _layouts/', () => {
-      mkdirSync(layoutsDir, { recursive: true });
-      writeFileSync(join(layoutsDir, 'page.html'), '<html><body>CUSTOM-PAGE {content}</body></html>');
-      build({ source: FIXTURE_DIR });
+describe('custom theme override', () => {
+  let vault: string;
 
-      const html = readFileSync(join(OUTPUT_DIR, 'javascript.html'), 'utf-8');
-      expect(html).toContain('CUSTOM-PAGE');
-    });
-
-    it('falls back to built-in templates for non-overridden layouts', () => {
-      // Only page.html was overridden above; index.html should use built-in
-      const html = readFileSync(join(OUTPUT_DIR, 'index.html'), 'utf-8');
-      expect(html).not.toContain('CUSTOM-PAGE');
-      expect(html).toContain('Sample Site');
-    });
+  beforeAll(() => {
+    vault = makeVault();
   });
 
-  describe('styles override', () => {
-    afterAll(() => {
-      rmSync(OUTPUT_DIR, { recursive: true, force: true });
-      rmSync(stylesDir, { recursive: true, force: true });
-    });
-
-    it('copies custom CSS files from _styles/ instead of built-in', () => {
-      mkdirSync(stylesDir, { recursive: true });
-      writeFileSync(join(stylesDir, 'style.css'), '/* custom style */');
-      writeFileSync(join(stylesDir, 'extra.css'), '/* extra style */');
-      build({ source: FIXTURE_DIR });
-
-      const style = readFileSync(join(OUTPUT_DIR, 'style.css'), 'utf-8');
-      expect(style).toBe('/* custom style */');
-      expect(existsSync(join(OUTPUT_DIR, 'extra.css'))).toBe(true);
-      const extra = readFileSync(join(OUTPUT_DIR, 'extra.css'), 'utf-8');
-      expect(extra).toBe('/* extra style */');
-    });
-
-    it('ignores non-CSS files in _styles/', () => {
-      expect(existsSync(join(OUTPUT_DIR, 'readme.txt'))).toBe(false);
-    });
+  afterAll(() => {
+    rmSync(vault, { recursive: true, force: true });
   });
 
-  describe('no overrides', () => {
-    afterAll(() => {
-      rmSync(OUTPUT_DIR, { recursive: true, force: true });
-    });
+  it('uses custom page.html from _layouts/ and built-in templates for the rest', () => {
+    const layoutsDir = join(vault, '_layouts');
+    mkdirSync(layoutsDir, { recursive: true });
+    writeFileSync(join(layoutsDir, 'page.html'), '<html><body>CUSTOM-PAGE {content}</body></html>');
+    const result = build({ source: vault });
 
-    it('uses built-in style.css when _styles/ does not exist', () => {
-      // Ensure no override dirs exist
-      rmSync(layoutsDir, { recursive: true, force: true });
-      rmSync(stylesDir, { recursive: true, force: true });
-      build({ source: FIXTURE_DIR });
+    expect(readOutput(result, 'javascript.html')).toContain('CUSTOM-PAGE');
+    const index = readOutput(result, 'index.html');
+    expect(index).not.toContain('CUSTOM-PAGE');
+    expect(index).toContain('Sample Site');
+  });
 
-      expect(existsSync(join(OUTPUT_DIR, 'style.css'))).toBe(true);
-      const style = readFileSync(join(OUTPUT_DIR, 'style.css'), 'utf-8');
-      expect(style).not.toBe('/* custom style */');
-    });
+  it('copies custom CSS files from _styles/ instead of built-in, ignoring non-CSS', () => {
+    const stylesDir = join(vault, '_styles');
+    mkdirSync(stylesDir, { recursive: true });
+    writeFileSync(join(stylesDir, 'style.css'), '/* custom style */');
+    writeFileSync(join(stylesDir, 'extra.css'), '/* extra style */');
+    writeFileSync(join(stylesDir, 'readme.txt'), 'not css');
+    const result = build({ source: vault });
+
+    expect(readOutput(result, 'style.css')).toBe('/* custom style */');
+    expect(readOutput(result, 'extra.css')).toBe('/* extra style */');
+    expect(existsSync(join(result.output, 'readme.txt'))).toBe(false);
   });
 });

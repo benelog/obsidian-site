@@ -9,6 +9,7 @@ import {
   buildTagsPage,
 } from '../src/render.js';
 import { extractTitle } from '../src/note.js';
+import { buildSiteModel } from '../src/site.js';
 import type { PageInfo } from '../src/types.js';
 
 function pages(entries: Record<string, string>, tagMap?: Record<string, string[]>): Map<string, PageInfo> {
@@ -171,7 +172,7 @@ describe('buildTagsPage', () => {
 
   it('renders tag list with counts', () => {
     const p = pages({ foo: '', bar: '' }, { foo: ['web'], bar: ['web', 'dev'] });
-    const html = buildTagsPage(p, template, config);
+    const html = buildTagsPage(buildSiteModel(p, config), template);
     expect(html).toContain('Tags');
     expect(html).toContain('web');
     expect(html).toContain('dev');
@@ -181,7 +182,7 @@ describe('buildTagsPage', () => {
 
   it('renders tag sections with page links', () => {
     const p = pages({ foo: '', bar: '' }, { foo: ['web'], bar: ['web'] });
-    const html = buildTagsPage(p, template, config);
+    const html = buildTagsPage(buildSiteModel(p, config), template);
     expect(html).toContain('id="tag-web"');
     expect(html).toContain('foo.html');
     expect(html).toContain('bar.html');
@@ -189,7 +190,7 @@ describe('buildTagsPage', () => {
 
   it('sorts tags alphabetically', () => {
     const p = pages({ a: '' }, { a: ['zoo', 'alpha'] });
-    const html = buildTagsPage(p, template, config);
+    const html = buildTagsPage(buildSiteModel(p, config), template);
     const alphaPos = html.indexOf('alpha');
     const zooPos = html.indexOf('zoo');
     expect(alphaPos).toBeLessThan(zooPos);
@@ -197,7 +198,7 @@ describe('buildTagsPage', () => {
 
   it('handles no tags gracefully', () => {
     const p = pages({ foo: '' });
-    const html = buildTagsPage(p, template, config);
+    const html = buildTagsPage(buildSiteModel(p, config), template);
     expect(html).not.toContain('{title}'); // title replaced
     expect(html).toContain('0'); // tag_count = 0
   });

@@ -3,10 +3,10 @@
  */
 
 import { marked } from 'marked';
-import { WIKILINK_RE, type PageInfo, type SiteConfig, type GitHubConfig } from './types.js';
-import { extractWikilinks, buildLocalGraph } from './graph.js';
+import { WIKILINK_RE, type PageInfo, type GitHubConfig } from './types.js';
+import { extractWikilinks, buildLocalGraph, type GraphData } from './graph.js';
 import { extractTitle } from './note.js';
-import type { GraphData } from './graph.js';
+import type { SiteModel } from './site.js';
 
 export function convertMarkdown(text: string): string {
   return marked.parse(text, { async: false }) as string;
@@ -167,14 +167,8 @@ export function renderPageGraph(stem: string, graphData: GraphData, pages: Map<s
 </script>`;
 }
 
-export function buildPage(
-  stem: string,
-  pages: Map<string, PageInfo>,
-  backlinks: Map<string, string[]>,
-  template: string,
-  config: SiteConfig,
-  graphData?: GraphData,
-): string {
+export function buildPage(stem: string, model: SiteModel, template: string): string {
+  const { pages, backlinks, graph, config } = model;
   const page = pages.get(stem)!;
   const content = page.content;
   const title = page.title;
@@ -191,7 +185,7 @@ export function buildPage(
 
   const editLinkHtml = renderEditLink(stem, config['content-directory'], config.gitHub);
   const tagsHtml = renderTags(page.tags);
-  const pageGraphHtml = graphData ? renderPageGraph(stem, graphData, pages) : '';
+  const pageGraphHtml = renderPageGraph(stem, graph, pages);
 
   return template
     .replaceAll('{title}', title)
@@ -220,11 +214,8 @@ export function extractTags(pages: Map<string, PageInfo>): Map<string, string[]>
   return tagMap;
 }
 
-export function buildTagsPage(
-  pages: Map<string, PageInfo>,
-  template: string,
-  config: SiteConfig,
-): string {
+export function buildTagsPage(model: SiteModel, template: string): string {
+  const { pages, config } = model;
   const tagMap = extractTags(pages);
   const sortedTags = [...tagMap.keys()].sort((a, b) => a.localeCompare(b));
 
@@ -258,12 +249,8 @@ export function buildTagsPage(
     .replaceAll('{tag_count}', String(sortedTags.length));
 }
 
-export function buildIndex(
-  graphData: GraphData,
-  pages: Map<string, PageInfo>,
-  template: string,
-  config: SiteConfig,
-): string {
+export function buildIndex(model: SiteModel, template: string): string {
+  const { pages, graph, config } = model;
   const pageListItems: string[] = [];
   for (const stem of [...pages.keys()].sort()) {
     pageListItems.push(`<li><a href="${stem}.html">${pages.get(stem)!.title}</a></li>`);
@@ -274,7 +261,7 @@ export function buildIndex(
     .replaceAll('{title}', config.title)
     .replaceAll('{subtitle}', config.subtitle || '')
     .replaceAll('{lang}', config.lang)
-    .replaceAll('{graph_data}', JSON.stringify(graphData))
+    .replaceAll('{graph_data}', JSON.stringify(graph))
     .replaceAll('{page_list}', pageListHtml)
     .replaceAll('{page_count}', String(pages.size));
 }

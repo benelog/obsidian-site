@@ -1,11 +1,10 @@
 /**
- * Local development server for previewing the built site.
+ * Local development server for previewing a built site directory.
  */
 
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
-import { join, extname, resolve } from 'path';
-import { build, loadConfig, type BuildOptions } from './build.js';
+import { extname, resolve, sep } from 'path';
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html',
@@ -20,42 +19,56 @@ const MIME_TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
 };
 
-export interface ServeOptions extends BuildOptions {
+export const DEFAULT_PORT = 8000;
+
+export interface ServeOptions {
+  /** Directory to serve. */
+  output: string;
   port?: number;
 }
 
-export function serve(options: ServeOptions): void {
-  build(options);
+export interface StaticFile {
+  path: string;
+  contentType: string;
+}
 
-  const source = resolve(options.source);
-  const config = loadConfig(source);
-  if (options.output) {
-    config['output-directory'] = options.output;
+/**
+ * Map a request URL to a file inside `root`, or null when the URL does not
+ * name a regular file within it. `/` serves `index.html`; the query string is
+ * ignored and percent-encoding is decoded.
+ */
+export function resolveStaticFile(root: string, url: string): StaticFile | null {
+  let urlPath = url.split('?')[0];
+  try {
+    urlPath = decodeURIComponent(urlPath);
+  } catch {
+    return null;
   }
-  const output = resolve(source, config['output-directory']);
-  const port = options.port ?? 8000;
+  if (urlPath === '/') urlPath = '/index.html';
+
+  const rootDir = resolve(root);
+  const filePath = resolve(rootDir, `.${urlPath}`);
+  if (!filePath.startsWith(rootDir + sep)) return null;
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) return null;
+
+  return {
+    path: filePath,
+    contentType: MIME_TYPES[extname(filePath)] ?? 'application/octet-stream',
+  };
+}
+
+export function serve(options: ServeOptions): void {
+  const port = options.port ?? DEFAULT_PORT;
 
   const server = createServer((req, res) => {
-    let urlPath = req.url ?? '/';
-    urlPath = urlPath.split('?')[0];
-
-    if (urlPath === '/') {
-      urlPath = '/index.html';
-    }
-
-    const filePath = join(output, urlPath);
-
-    if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+    const file = resolveStaticFile(options.output, req.url ?? '/');
+    if (!file) {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Not Found');
       return;
     }
-
-    const ext = extname(filePath);
-    const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';
-    const content = readFileSync(filePath);
-    res.writeHead(200, { 'Content-Type': contentType });
-    res.end(content);
+    res.writeHead(200, { 'Content-Type': file.contentType });
+    res.end(readFileSync(file.path));
   });
 
   server.listen(port, () => {

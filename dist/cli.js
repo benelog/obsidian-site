@@ -8,8 +8,9 @@
  */
 import { resolve, join } from 'path';
 import { mkdirSync, copyFileSync } from 'fs';
-import { build, PACKAGE_DIR } from './build.js';
-import { serve } from './serve.js';
+import { build } from './build.js';
+import { serve, DEFAULT_PORT } from './serve.js';
+import { PACKAGE_DIR, LAYOUT_FILES, BUILTIN_STYLE, USER_LAYOUTS_DIR, USER_STYLES_DIR } from './theme.js';
 function printUsage() {
     console.log(`Usage: obsidian-site <command> [options]
 
@@ -21,7 +22,14 @@ Commands:
 Options:
   --source <path>    Path to the Obsidian vault (default: current directory)
   --output <path>    Output directory (overrides site.yaml setting)
-  --port <number>    Port for the preview server (default: 8000)`);
+  --port <number>    Port for the preview server (default: ${DEFAULT_PORT})`);
+}
+function printBuildSummary(result) {
+    console.log(`Source: ${result.source}`);
+    console.log(`Output: ${result.output}`);
+    console.log(`Found ${result.pageCount} pages`);
+    console.log(`Graph: ${result.nodeCount} nodes, ${result.edgeCount} edges`);
+    console.log(`Generated ${result.pageCount} pages + index.html → ${result.output}`);
 }
 function parseArgs(argv) {
     const args = argv.slice(2);
@@ -48,22 +56,25 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv);
 switch (args.command) {
     case 'build':
-        build({ source: args.source, output: args.output });
+        printBuildSummary(build({ source: args.source, output: args.output }));
         break;
     case 'serve':
-    case 'server':
-        serve({ source: args.source, output: args.output, port: args.port });
+    case 'server': {
+        const result = build({ source: args.source, output: args.output });
+        printBuildSummary(result);
+        serve({ output: result.output, port: args.port });
         break;
+    }
     case 'init-theme': {
         const dest = args.source;
-        const layoutsDir = join(dest, '_layouts');
-        const stylesDir = join(dest, '_styles');
+        const layoutsDir = join(dest, USER_LAYOUTS_DIR);
+        const stylesDir = join(dest, USER_STYLES_DIR);
         mkdirSync(layoutsDir, { recursive: true });
         mkdirSync(stylesDir, { recursive: true });
-        for (const f of ['page.html', 'index.html', 'tags.html']) {
+        for (const f of LAYOUT_FILES) {
             copyFileSync(join(PACKAGE_DIR, 'layouts', f), join(layoutsDir, f));
         }
-        copyFileSync(join(PACKAGE_DIR, 'styles', 'style.css'), join(stylesDir, 'style.css'));
+        copyFileSync(join(PACKAGE_DIR, 'styles', BUILTIN_STYLE), join(stylesDir, BUILTIN_STYLE));
         console.log(`Theme files initialized in ${dest}`);
         break;
     }

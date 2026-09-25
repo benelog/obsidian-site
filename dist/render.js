@@ -157,7 +157,8 @@ export function renderPageGraph(stem, graphData, pages) {
 })();
 </script>`;
 }
-export function buildPage(stem, pages, backlinks, template, config, graphData) {
+export function buildPage(stem, model, template) {
+    const { pages, backlinks, graph, config } = model;
     const page = pages.get(stem);
     const content = page.content;
     const title = page.title;
@@ -170,7 +171,7 @@ export function buildPage(stem, pages, backlinks, template, config, graphData) {
     const backlinksHtml = renderBacklinks(stem, backlinks, pages);
     const editLinkHtml = renderEditLink(stem, config['content-directory'], config.gitHub);
     const tagsHtml = renderTags(page.tags);
-    const pageGraphHtml = graphData ? renderPageGraph(stem, graphData, pages) : '';
+    const pageGraphHtml = renderPageGraph(stem, graph, pages);
     return template
         .replaceAll('{title}', title)
         .replaceAll('{site_title}', config.title)
@@ -197,7 +198,8 @@ export function extractTags(pages) {
     }
     return tagMap;
 }
-export function buildTagsPage(pages, template, config) {
+export function buildTagsPage(model, template) {
+    const { pages, config } = model;
     const tagMap = extractTags(pages);
     const sortedTags = [...tagMap.keys()].sort((a, b) => a.localeCompare(b));
     // Tag list (top summary)
@@ -227,7 +229,8 @@ export function buildTagsPage(pages, template, config) {
         .replaceAll('{tag_sections}', tagSectionsHtml)
         .replaceAll('{tag_count}', String(sortedTags.length));
 }
-export function buildIndex(graphData, pages, template, config) {
+export function buildIndex(model, template) {
+    const { pages, graph, config } = model;
     const pageListItems = [];
     for (const stem of [...pages.keys()].sort()) {
         pageListItems.push(`<li><a href="${stem}.html">${pages.get(stem).title}</a></li>`);
@@ -237,7 +240,7 @@ export function buildIndex(graphData, pages, template, config) {
         .replaceAll('{title}', config.title)
         .replaceAll('{subtitle}', config.subtitle || '')
         .replaceAll('{lang}', config.lang)
-        .replaceAll('{graph_data}', JSON.stringify(graphData))
+        .replaceAll('{graph_data}', JSON.stringify(graph))
         .replaceAll('{page_list}', pageListHtml)
         .replaceAll('{page_count}', String(pages.size));
 }

@@ -1,10 +1,9 @@
 /**
- * Local development server for previewing the built site.
+ * Local development server for previewing a built site directory.
  */
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
-import { join, extname, resolve } from 'path';
-import { build, loadConfig } from './build.js';
+import { extname, resolve, sep } from 'path';
 const MIME_TYPES = {
     '.html': 'text/html',
     '.css': 'text/css',
@@ -17,32 +16,44 @@ const MIME_TYPES = {
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
 };
-export function serve(options) {
-    build(options);
-    const source = resolve(options.source);
-    const config = loadConfig(source);
-    if (options.output) {
-        config['output-directory'] = options.output;
+export const DEFAULT_PORT = 8000;
+/**
+ * Map a request URL to a file inside `root`, or null when the URL does not
+ * name a regular file within it. `/` serves `index.html`; the query string is
+ * ignored and percent-encoding is decoded.
+ */
+export function resolveStaticFile(root, url) {
+    let urlPath = url.split('?')[0];
+    try {
+        urlPath = decodeURIComponent(urlPath);
     }
-    const output = resolve(source, config['output-directory']);
-    const port = options.port ?? 8000;
+    catch {
+        return null;
+    }
+    if (urlPath === '/')
+        urlPath = '/index.html';
+    const rootDir = resolve(root);
+    const filePath = resolve(rootDir, `.${urlPath}`);
+    if (!filePath.startsWith(rootDir + sep))
+        return null;
+    if (!existsSync(filePath) || !statSync(filePath).isFile())
+        return null;
+    return {
+        path: filePath,
+        contentType: MIME_TYPES[extname(filePath)] ?? 'application/octet-stream',
+    };
+}
+export function serve(options) {
+    const port = options.port ?? DEFAULT_PORT;
     const server = createServer((req, res) => {
-        let urlPath = req.url ?? '/';
-        urlPath = urlPath.split('?')[0];
-        if (urlPath === '/') {
-            urlPath = '/index.html';
-        }
-        const filePath = join(output, urlPath);
-        if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+        const file = resolveStaticFile(options.output, req.url ?? '/');
+        if (!file) {
             res.writeHead(404, { 'Content-Type': 'text/plain' });
             res.end('Not Found');
             return;
         }
-        const ext = extname(filePath);
-        const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';
-        const content = readFileSync(filePath);
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(content);
+        res.writeHead(200, { 'Content-Type': file.contentType });
+        res.end(readFileSync(file.path));
     });
     server.listen(port, () => {
         console.log(`\nServing at http://localhost:${port}/`);

@@ -1,29 +1,35 @@
 /**
- * Core build logic for generating a static website from an Obsidian vault.
+ * Build orchestration: scan the vault, render in memory, write to disk.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'fs';
 import { resolve, join, basename, extname } from 'path';
-import { fileURLToPath } from 'url';
-import { parse as parseYaml } from 'yaml';
 
+import { loadConfig } from './config.js';
 import { parseNote } from './note.js';
-import { buildGraph, buildBacklinks } from './graph.js';
-import { buildPage, buildIndex, buildTagsPage } from './render.js';
+import { buildSiteModel, renderSite, type SiteFiles } from './site.js';
+import { loadTemplates, loadStyles } from './theme.js';
 import type { PageInfo, SiteConfig } from './types.js';
 
-export const PACKAGE_DIR = resolve(fileURLToPath(import.meta.url), '..', '..');
-
-export function loadConfig(source: string): SiteConfig {
-  const config: SiteConfig = { title: basename(source), subtitle: '', lang: 'en', 'content-directory': 'content', 'output-directory': 'public' };
-  const configPath = join(source, 'site.yaml');
-  if (existsSync(configPath)) {
-    const data = parseYaml(readFileSync(configPath, 'utf-8'));
-    Object.assign(config, data);
-  }
-  return config;
+export interface BuildOptions {
+  source: string;
+  /** Overrides `output-directory` from site.yaml. */
+  output?: string;
 }
 
+export interface BuildResult {
+  source: string;
+  output: string;
+  config: SiteConfig;
+  pageCount: number;
+  nodeCount: number;
+  edgeCount: number;
+}
+
+/**
+ * Read every `.md` under the content directory (or the vault root if the
+ * content directory does not exist), keyed by filename stem.
+ */
 export function scanVault(source: string, contentDirectory: string): Map<string, PageInfo> {
   const contentDir = join(source, contentDirectory);
   const scanDir = existsSync(contentDir) ? contentDir : source;
@@ -43,19 +49,14 @@ export function scanVault(source: string, contentDirectory: string): Map<string,
   return pages;
 }
 
-export interface BuildOptions {
-  source: string;
-  output?: string;
+export function writeSite(files: SiteFiles, output: string): void {
+  mkdirSync(output, { recursive: true });
+  for (const [name, content] of files) {
+    writeFileSync(join(output, name), content, 'utf-8');
+  }
 }
 
-function resolveTemplate(source: string, name: string): string {
-  const userPath = join(source, '_layouts', name);
-  const defaultPath = join(PACKAGE_DIR, 'layouts', name);
-  const templatePath = existsSync(userPath) ? userPath : defaultPath;
-  return readFileSync(templatePath, 'utf-8');
-}
-
-export function build(options: BuildOptions): void {
+export function build(options: BuildOptions): BuildResult {
   const source = resolve(options.source);
   const config = loadConfig(source);
   if (options.output) {
@@ -63,51 +64,17 @@ export function build(options: BuildOptions): void {
   }
   const output = resolve(source, config['output-directory']);
 
-  console.log(`Source: ${source}`);
-  console.log(`Output: ${output}`);
-
-  // Load templates (user overrides in _layouts/ take precedence)
-  const pageTemplate = resolveTemplate(source, 'page.html');
-  const indexTemplate = resolveTemplate(source, 'index.html');
-  const tagsTemplate = resolveTemplate(source, 'tags.html');
-
-  // Scan vault
   const pages = scanVault(source, config['content-directory']);
-  console.log(`Found ${pages.size} pages`);
+  const model = buildSiteModel(pages, config);
+  const files = renderSite(model, loadTemplates(source), loadStyles(source));
+  writeSite(files, output);
 
-  // Build graph and backlinks
-  const graphData = buildGraph(pages);
-  const backlinks = buildBacklinks(pages);
-  console.log(`Graph: ${graphData.nodes.length} nodes, ${graphData.links.length} edges`);
-
-  // Create output directory
-  mkdirSync(output, { recursive: true });
-
-  // Generate pages
-  for (const stem of pages.keys()) {
-    const html = buildPage(stem, pages, backlinks, pageTemplate, config, graphData);
-    writeFileSync(join(output, `${stem}.html`), html, 'utf-8');
-  }
-
-  // Generate index
-  const indexHtml = buildIndex(graphData, pages, indexTemplate, config);
-  writeFileSync(join(output, 'index.html'), indexHtml, 'utf-8');
-
-  // Generate tags page
-  const tagsHtml = buildTagsPage(pages, tagsTemplate, config);
-  writeFileSync(join(output, 'tags.html'), tagsHtml, 'utf-8');
-
-  // Copy static files (user overrides in _styles/ take precedence)
-  const userStylesDir = join(source, '_styles');
-  if (existsSync(userStylesDir)) {
-    for (const file of readdirSync(userStylesDir)) {
-      if (extname(file) === '.css') {
-        copyFileSync(join(userStylesDir, file), join(output, file));
-      }
-    }
-  } else {
-    copyFileSync(join(PACKAGE_DIR, 'styles', 'style.css'), join(output, 'style.css'));
-  }
-
-  console.log(`Generated ${pages.size} pages + index.html → ${output}`);
+  return {
+    source,
+    output,
+    config,
+    pageCount: pages.size,
+    nodeCount: model.graph.nodes.length,
+    edgeCount: model.graph.links.length,
+  };
 }
