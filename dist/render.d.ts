@@ -3,7 +3,6 @@
  */
 import { type PageInfo, type SiteConfig, type GitHubConfig } from './types.js';
 import type { GraphData } from './graph.js';
-export declare function extractTitle(stem: string): string;
 export declare function convertMarkdown(text: string): string;
 export declare function processWikilinks(html: string, pages: Map<string, PageInfo>): string;
 export declare function downgradeHeadings(html: string): string;

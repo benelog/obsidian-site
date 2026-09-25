@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  extractTitle,
   downgradeHeadings,
   processWikilinks,
   renderRelated,
@@ -9,6 +8,7 @@ import {
   extractTags,
   buildTagsPage,
 } from '../src/render.js';
+import { extractTitle } from '../src/note.js';
 import type { PageInfo } from '../src/types.js';
 
 function pages(entries: Record<string, string>, tagMap?: Record<string, string[]>): Map<string, PageInfo> {

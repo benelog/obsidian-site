@@ -21,13 +21,7 @@ export interface GraphData {
 }
 
 export function extractWikilinks(content: string): string[] {
-  const links: string[] = [];
-  const re = new RegExp(WIKILINK_RE.source, 'g');
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) {
-    links.push(m[1]);
-  }
-  return links;
+  return [...content.matchAll(WIKILINK_RE)].map(m => m[1]);
 }
 
 export function buildGraph(pages: Map<string, PageInfo>): GraphData {

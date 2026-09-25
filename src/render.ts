@@ -5,19 +5,16 @@
 import { marked } from 'marked';
 import { WIKILINK_RE, type PageInfo, type SiteConfig, type GitHubConfig } from './types.js';
 import { extractWikilinks, buildLocalGraph } from './graph.js';
+import { extractTitle } from './note.js';
 import type { GraphData } from './graph.js';
-
-export function extractTitle(stem: string): string {
-  return stem.replace(/-/g, ' ');
-}
 
 export function convertMarkdown(text: string): string {
   return marked.parse(text, { async: false }) as string;
 }
 
 export function processWikilinks(html: string, pages: Map<string, PageInfo>): string {
-  return html.replace(new RegExp(WIKILINK_RE.source, 'g'), (_match, target: string, display?: string) => {
-    const label = display || target.replace(/-/g, ' ');
+  return html.replace(WIKILINK_RE, (_match, target: string, display?: string) => {
+    const label = display || extractTitle(target);
     if (pages.has(target)) {
       return `<a href="${target}.html" class="wikilink">${label}</a>`;
     }

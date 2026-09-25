@@ -7,6 +7,7 @@ import { resolve, join, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { parse as parseYaml } from 'yaml';
 
+import { parseNote } from './note.js';
 import { buildGraph, buildBacklinks } from './graph.js';
 import { buildPage, buildIndex, buildTagsPage } from './render.js';
 import type { PageInfo, SiteConfig } from './types.js';
@@ -37,39 +38,7 @@ export function scanVault(source: string, contentDirectory: string): Map<string,
     const stem = basename(file, '.md');
     const filePath = join(scanDir, file);
     const raw = readFileSync(filePath, 'utf-8');
-    let title = stem.replace(/-/g, ' ');
-    let content = raw;
-    const tags = new Set<string>();
-
-    const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-    if (fmMatch) {
-      const fm = parseYaml(fmMatch[1]);
-      if (fm && typeof fm.title === 'string') {
-        title = fm.title;
-      }
-      if (fm && Array.isArray(fm.tags)) {
-        for (const t of fm.tags) {
-          if (typeof t === 'string') tags.add(t);
-        }
-      }
-      content = raw.slice(fmMatch[0].length).replace(/^\r?\n/, '');
-    }
-
-    // Extract inline #tags from body (skip headings, code blocks, wikilinks)
-    let inCodeBlock = false;
-    for (const line of content.split('\n')) {
-      if (line.startsWith('```')) { inCodeBlock = !inCodeBlock; continue; }
-      if (inCodeBlock) continue;
-      if (/^#{1,6}\s/.test(line)) continue;
-      // Match #tag patterns, excluding inside wikilinks
-      const withoutWikilinks = line.replace(/\[\[[^\]]*\]\]/g, '');
-      const matches = withoutWikilinks.matchAll(/(?:^|\s)#([a-zA-Z\uAC00-\uD7AF\u3131-\u318E][a-zA-Z0-9\uAC00-\uD7AF\u3131-\u318E_-]*)/g);
-      for (const m of matches) {
-        tags.add(m[1]);
-      }
-    }
-
-    pages.set(stem, { path: filePath, title, content, tags: [...tags] });
+    pages.set(stem, { path: filePath, ...parseNote(stem, raw) });
   }
   return pages;
 }

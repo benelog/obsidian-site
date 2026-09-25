@@ -3,13 +3,7 @@
  */
 import { WIKILINK_RE } from './types.js';
 export function extractWikilinks(content) {
-    const links = [];
-    const re = new RegExp(WIKILINK_RE.source, 'g');
-    let m;
-    while ((m = re.exec(content)) !== null) {
-        links.push(m[1]);
-    }
-    return links;
+    return [...content.matchAll(WIKILINK_RE)].map(m => m[1]);
 }
 export function buildGraph(pages) {
     const linksMap = new Map();

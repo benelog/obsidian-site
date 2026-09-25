@@ -4,15 +4,13 @@
 import { marked } from 'marked';
 import { WIKILINK_RE } from './types.js';
 import { extractWikilinks, buildLocalGraph } from './graph.js';
-export function extractTitle(stem) {
-    return stem.replace(/-/g, ' ');
-}
+import { extractTitle } from './note.js';
 export function convertMarkdown(text) {
     return marked.parse(text, { async: false });
 }
 export function processWikilinks(html, pages) {
-    return html.replace(new RegExp(WIKILINK_RE.source, 'g'), (_match, target, display) => {
-        const label = display || target.replace(/-/g, ' ');
+    return html.replace(WIKILINK_RE, (_match, target, display) => {
+        const label = display || extractTitle(target);
         if (pages.has(target)) {
             return `<a href="${target}.html" class="wikilink">${label}</a>`;
         }
