@@ -18,7 +18,7 @@ export function buildSiteModel(pages, config) {
 export function renderSite(model, templates, styles) {
     const files = new Map();
     for (const stem of model.pages.keys()) {
-        files.set(`${stem}.html`, buildPage(stem, model, templates['page.html']));
+        files.set(`${stem}.html`, buildPage(stem, model, templates));
     }
     files.set('index.html', buildIndex(model, templates['index.html']));
     files.set('tags.html', buildTagsPage(model, templates['tags.html']));

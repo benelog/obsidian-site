@@ -7,7 +7,7 @@ import { resolve, join, extname } from 'path';
 import { fileURLToPath } from 'url';
 /** Root of the installed package, where `layouts/` and `styles/` live. */
 export const PACKAGE_DIR = resolve(fileURLToPath(import.meta.url), '..', '..');
-export const LAYOUT_FILES = ['page.html', 'index.html', 'tags.html'];
+export const LAYOUT_FILES = ['page.html', 'page-graph.html', 'index.html', 'tags.html'];
 export const BUILTIN_STYLE = 'style.css';
 /** Vault-relative directories that override the built-in theme. */
 export const USER_LAYOUTS_DIR = '_layouts';

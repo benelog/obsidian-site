@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url';
 /** Root of the installed package, where `layouts/` and `styles/` live. */
 export const PACKAGE_DIR = resolve(fileURLToPath(import.meta.url), '..', '..');
 
-export const LAYOUT_FILES = ['page.html', 'index.html', 'tags.html'] as const;
+export const LAYOUT_FILES = ['page.html', 'page-graph.html', 'index.html', 'tags.html'] as const;
 export type LayoutName = (typeof LAYOUT_FILES)[number];
 export type Templates = Record<LayoutName, string>;
 

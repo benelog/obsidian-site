@@ -4,6 +4,9 @@
 import { type PageInfo, type GitHubConfig } from './types.js';
 import { type GraphData } from './graph.js';
 import type { SiteModel } from './site.js';
+import type { Templates } from './theme.js';
+/** The layouts a single page needs: its own and the embedded graph widget. */
+export type PageTemplates = Pick<Templates, 'page.html' | 'page-graph.html'>;
 export declare function escapeHtml(text: string): string;
 /**
  * Fill `{name}` placeholders in a single pass. Values are inserted verbatim
@@ -25,8 +28,12 @@ export declare function renderRelated(wikilinks: string[], pages: Map<string, Pa
 export declare function renderBacklinks(stem: string, backlinks: Map<string, string[]>, pages: Map<string, PageInfo>): string;
 export declare function renderEditLink(stem: string, contentDirectory: string, gitHub?: GitHubConfig): string;
 export declare function renderTags(tags: string[]): string;
-export declare function renderPageGraph(stem: string, graphData: GraphData, pages: Map<string, PageInfo>): string;
-export declare function buildPage(stem: string, model: SiteModel, template: string): string;
+/**
+ * Local (depth-2) graph around `stem`, rendered through the page-graph
+ * layout. Empty when the page has no connections.
+ */
+export declare function renderPageGraph(stem: string, graphData: GraphData, template: string): string;
+export declare function buildPage(stem: string, model: SiteModel, templates: PageTemplates): string;
 export declare function extractTags(pages: Map<string, PageInfo>): Map<string, string[]>;
 export declare function buildTagsPage(model: SiteModel, template: string): string;
 export declare function buildIndex(model: SiteModel, template: string): string;

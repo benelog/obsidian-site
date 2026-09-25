@@ -34,7 +34,7 @@ export function renderSite(model: SiteModel, templates: Templates, styles: Map<s
   const files: SiteFiles = new Map();
 
   for (const stem of model.pages.keys()) {
-    files.set(`${stem}.html`, buildPage(stem, model, templates['page.html']));
+    files.set(`${stem}.html`, buildPage(stem, model, templates));
   }
   files.set('index.html', buildIndex(model, templates['index.html']));
   files.set('tags.html', buildTagsPage(model, templates['tags.html']));

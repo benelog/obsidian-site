@@ -4,7 +4,7 @@
  */
 /** Root of the installed package, where `layouts/` and `styles/` live. */
 export declare const PACKAGE_DIR: string;
-export declare const LAYOUT_FILES: readonly ["page.html", "index.html", "tags.html"];
+export declare const LAYOUT_FILES: readonly ["page.html", "page-graph.html", "index.html", "tags.html"];
 export type LayoutName = (typeof LAYOUT_FILES)[number];
 export type Templates = Record<LayoutName, string>;
 export declare const BUILTIN_STYLE = "style.css";

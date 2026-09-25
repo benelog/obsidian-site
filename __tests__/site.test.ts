@@ -6,7 +6,8 @@ import { pages, testConfig } from './helpers.js';
 const config = testConfig({ title: 'Site' });
 
 const templates: Templates = {
-  'page.html': 'PAGE {title} {body}',
+  'page.html': 'PAGE {title} {body} {page_graph}',
+  'page-graph.html': 'GRAPH {center_id}',
   'index.html': 'INDEX {title} {page_count}',
   'tags.html': 'TAGS {tag_count}',
 };
@@ -28,9 +29,18 @@ describe('renderSite', () => {
     expect([...files.keys()].sort()).toEqual(['a.html', 'b.html', 'index.html', 'style.css', 'tags.html']);
     expect(files.get('a.html')).toContain('PAGE a');
     expect(files.get('a.html')).toContain('<p>Hello</p>');
+    expect(files.get('a.html')).not.toContain('GRAPH');
     expect(files.get('index.html')).toBe('INDEX Site 2');
     expect(files.get('tags.html')).toBe('TAGS 0');
     expect(files.get('style.css')).toBe('body{}');
+  });
+
+  it('embeds the page graph only for connected pages', () => {
+    const model = buildSiteModel(pages({ a: '[[b]]', b: '', c: '' }), config);
+    const files = renderSite(model, templates, new Map());
+    expect(files.get('a.html')).toContain('GRAPH "a"');
+    expect(files.get('b.html')).toContain('GRAPH "b"');
+    expect(files.get('c.html')).not.toContain('GRAPH');
   });
 
   it('includes every stylesheet it is given', () => {
