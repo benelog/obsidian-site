@@ -19,3 +19,8 @@ export declare function loadTemplates(source: string): Templates;
  * built-in stylesheet entirely.
  */
 export declare function loadStyles(source: string): Map<string, string>;
+/**
+ * Copy the built-in layouts and stylesheet into the vault's `_layouts/` and
+ * `_styles/` so they can be customized. Returns the destination paths.
+ */
+export declare function initTheme(source: string): string[];

@@ -1,14 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { extractWikilinks, buildGraph, buildBacklinks, buildLocalGraph } from '../src/graph.js';
-import type { PageInfo } from '../src/types.js';
-
-function pages(entries: Record<string, string>): Map<string, PageInfo> {
-  const map = new Map<string, PageInfo>();
-  for (const [stem, content] of Object.entries(entries)) {
-    map.set(stem, { path: `${stem}.md`, title: stem.replace(/-/g, ' '), content });
-  }
-  return map;
-}
+import { pages } from './helpers.js';
 
 describe('extractWikilinks', () => {
   it('extracts simple wikilinks', () => {

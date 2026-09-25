@@ -1,23 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { buildSiteModel, renderSite } from '../src/site.js';
 import type { Templates } from '../src/theme.js';
-import type { PageInfo, SiteConfig } from '../src/types.js';
+import { pages, testConfig } from './helpers.js';
 
-function pages(entries: Record<string, string>): Map<string, PageInfo> {
-  const map = new Map<string, PageInfo>();
-  for (const [stem, content] of Object.entries(entries)) {
-    map.set(stem, { path: `${stem}.md`, title: stem, content, tags: [] });
-  }
-  return map;
-}
-
-const config: SiteConfig = {
-  title: 'Site',
-  subtitle: '',
-  lang: 'en',
-  'content-directory': 'content',
-  'output-directory': 'public',
-};
+const config = testConfig({ title: 'Site' });
 
 const templates: Templates = {
   'page.html': 'PAGE {title} {body}',

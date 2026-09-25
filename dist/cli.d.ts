@@ -3,7 +3,8 @@
  * CLI entry point for obsidian-site.
  *
  * Usage:
- *   obsidian-site build  [--source <path>] [--output <path>]
- *   obsidian-site serve  [--source <path>] [--output <path>] [--port <number>]
+ *   obsidian-site build       [--source <path>] [--output <path>]
+ *   obsidian-site serve       [--source <path>] [--output <path>] [--port <number>]
+ *   obsidian-site init-theme  [--source <path>]
  */
 export {};

@@ -15,14 +15,7 @@ import {
 import { extractTitle } from '../src/note.js';
 import { buildSiteModel } from '../src/site.js';
 import type { PageInfo } from '../src/types.js';
-
-function pages(entries: Record<string, string>, tagMap?: Record<string, string[]>): Map<string, PageInfo> {
-  const map = new Map<string, PageInfo>();
-  for (const [stem, content] of Object.entries(entries)) {
-    map.set(stem, { path: `${stem}.md`, title: stem.replace(/-/g, ' '), content, tags: tagMap?.[stem] || [] });
-  }
-  return map;
-}
+import { pages, testConfig } from './helpers.js';
 
 describe('extractTitle', () => {
   it('replaces hyphens with spaces', () => {
@@ -230,7 +223,7 @@ describe('extractTags', () => {
 
 describe('buildTagsPage', () => {
   const template = '<html lang="{lang}"><title>{title} — {site_title}</title><div>{tag_count}</div><ul>{tag_list}</ul><div>{tag_sections}</div></html>';
-  const config = { title: 'Test', subtitle: '', lang: 'en', 'content-directory': 'content', 'output-directory': 'public' };
+  const config = testConfig();
 
   it('renders tag list with counts', () => {
     const p = pages({ foo: '', bar: '' }, { foo: ['web'], bar: ['web', 'dev'] });

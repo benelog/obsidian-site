@@ -3,7 +3,7 @@
  * and a vault can override them with `_layouts/` and `_styles/` directories.
  */
 
-import { readFileSync, readdirSync, existsSync } from 'fs';
+import { readFileSync, readdirSync, existsSync, mkdirSync, copyFileSync } from 'fs';
 import { resolve, join, extname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -55,4 +55,26 @@ export function loadStyles(source: string): Map<string, string> {
   }
 
   return styles;
+}
+
+/**
+ * Copy the built-in layouts and stylesheet into the vault's `_layouts/` and
+ * `_styles/` so they can be customized. Returns the destination paths.
+ */
+export function initTheme(source: string): string[] {
+  const layoutsDir = join(source, USER_LAYOUTS_DIR);
+  const stylesDir = join(source, USER_STYLES_DIR);
+  mkdirSync(layoutsDir, { recursive: true });
+  mkdirSync(stylesDir, { recursive: true });
+
+  const copied: string[] = [];
+  for (const name of LAYOUT_FILES) {
+    const dest = join(layoutsDir, name);
+    copyFileSync(join(PACKAGE_DIR, 'layouts', name), dest);
+    copied.push(dest);
+  }
+  const styleDest = join(stylesDir, BUILTIN_STYLE);
+  copyFileSync(join(PACKAGE_DIR, 'styles', BUILTIN_STYLE), styleDest);
+  copied.push(styleDest);
+  return copied;
 }
