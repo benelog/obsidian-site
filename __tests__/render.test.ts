@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  escapeHtml,
+  renderTemplate,
+  pageListItem,
+  stripRelatedSection,
   downgradeHeadings,
   processWikilinks,
   renderRelated,
@@ -27,6 +31,64 @@ describe('extractTitle', () => {
 
   it('returns as-is when no hyphens', () => {
     expect(extractTitle('react')).toBe('react');
+  });
+});
+
+describe('escapeHtml', () => {
+  it('escapes markup-significant characters', () => {
+    expect(escapeHtml('Tom & <Jerry> "q"')).toBe('Tom &amp; &lt;Jerry&gt; &quot;q&quot;');
+  });
+
+  it('leaves plain text unchanged', () => {
+    expect(escapeHtml('plain')).toBe('plain');
+  });
+});
+
+describe('renderTemplate', () => {
+  it('fills placeholders', () => {
+    expect(renderTemplate('<h1>{title}</h1>{body}', { title: 'T', body: 'B' })).toBe('<h1>T</h1>B');
+  });
+
+  it('replaces repeated placeholders', () => {
+    expect(renderTemplate('{a}-{a}', { a: 'x' })).toBe('x-x');
+  });
+
+  it('leaves unknown placeholders untouched', () => {
+    expect(renderTemplate('{known} {unknown}', { known: 'k' })).toBe('k {unknown}');
+  });
+
+  it('does not re-scan inserted values', () => {
+    expect(renderTemplate('{a} {b}', { a: '{b}', b: 'B' })).toBe('{b} B');
+  });
+
+  it('ignores braces that are not simple placeholders', () => {
+    expect(renderTemplate('const x = { y: 1 }; {z}', { z: 'Z' })).toBe('const x = { y: 1 }; Z');
+  });
+});
+
+describe('pageListItem', () => {
+  it('links to the page using its title', () => {
+    const p = pages({ 'my-page': '' });
+    expect(pageListItem('my-page', p)).toBe('<li><a href="my-page.html">my page</a></li>');
+  });
+
+  it('escapes the title', () => {
+    const p = new Map<string, PageInfo>([['x', { path: 'x.md', title: 'A & B', content: '', tags: [] }]]);
+    expect(pageListItem('x', p)).toBe('<li><a href="x.html">A &amp; B</a></li>');
+  });
+});
+
+describe('stripRelatedSection', () => {
+  it('removes the Related heading and everything after it', () => {
+    expect(stripRelatedSection('intro\n\n## Related\n\n[[a]]\n[[b]]\n')).toBe('intro\n\n');
+  });
+
+  it('leaves content without a Related section unchanged', () => {
+    expect(stripRelatedSection('intro\n\n## Other\n')).toBe('intro\n\n## Other\n');
+  });
+
+  it('does not match a deeper heading', () => {
+    expect(stripRelatedSection('a\n### Related\nb')).toBe('a\n### Related\nb');
   });
 });
 

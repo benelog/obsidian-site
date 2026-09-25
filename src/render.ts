@@ -8,8 +8,50 @@ import { extractWikilinks, buildLocalGraph, type GraphData } from './graph.js';
 import { extractTitle } from './note.js';
 import type { SiteModel } from './site.js';
 
+/** Placeholder syntax used by the layout templates: `{name}`. */
+const PLACEHOLDER_RE = /\{(\w+)\}/g;
+
+/** Everything from a `## Related` heading to the end of the note. */
+const RELATED_SECTION_RE = /^##\s+Related\s*$[\s\S]*/m;
+
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Fill `{name}` placeholders in a single pass. Values are inserted verbatim
+ * and never re-scanned, and placeholders without a value are left as-is.
+ */
+export function renderTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(PLACEHOLDER_RE, (match, name: string) =>
+    Object.hasOwn(vars, name) ? vars[name] : match,
+  );
+}
+
+/** `<li>` link to an existing page, labelled with its title. */
+export function pageListItem(stem: string, pages: Map<string, PageInfo>): string {
+  return `<li><a href="${stem}.html">${escapeHtml(pages.get(stem)!.title)}</a></li>`;
+}
+
+function listSection(className: string, heading: string, items: string[]): string {
+  return `<section class="${className}"><h2>${heading}</h2><ul>${items.join('\n')}</ul></section>`;
+}
+
 export function convertMarkdown(text: string): string {
   return marked.parse(text, { async: false }) as string;
+}
+
+/**
+ * Drop the trailing `## Related` section from note content. Its links are
+ * still picked up by `extractWikilinks` on the full content and shown in the
+ * sidebar; they are just not repeated in the body.
+ */
+export function stripRelatedSection(content: string): string {
+  return content.replace(RELATED_SECTION_RE, '');
 }
 
 export function processWikilinks(html: string, pages: Map<string, PageInfo>): string {
@@ -32,29 +74,15 @@ export function downgradeHeadings(html: string): string {
 export function renderRelated(wikilinks: string[], pages: Map<string, PageInfo>): string {
   if (wikilinks.length === 0) return '';
 
-  const seen = new Set<string>();
-  const items: string[] = [];
-  for (const target of [...wikilinks].sort()) {
-    if (seen.has(target)) continue;
-    seen.add(target);
-    if (pages.has(target)) {
-      items.push(`<li><a href="${target}.html">${pages.get(target)!.title}</a></li>`);
-    }
-  }
-
-  if (items.length === 0) return '';
-  return '<section class="related"><h2>Related</h2><ul>' + items.join('\n') + '</ul></section>';
+  const targets = [...new Set(wikilinks)].sort().filter(target => pages.has(target));
+  if (targets.length === 0) return '';
+  return listSection('related', 'Related', targets.map(stem => pageListItem(stem, pages)));
 }
 
 export function renderBacklinks(stem: string, backlinks: Map<string, string[]>, pages: Map<string, PageInfo>): string {
-  const links = backlinks.get(stem) || [];
-  if (links.length === 0) return '';
-
-  const items: string[] = [];
-  for (const src of links) {
-    items.push(`<li><a href="${src}.html">${pages.get(src)!.title}</a></li>`);
-  }
-  return '<section class="backlinks"><h2>Backlinks</h2><ul>' + items.join('\n') + '</ul></section>';
+  const sources = backlinks.get(stem) || [];
+  if (sources.length === 0) return '';
+  return listSection('backlinks', 'Backlinks', sources.map(src => pageListItem(src, pages)));
 }
 
 export function renderEditLink(stem: string, contentDirectory: string, gitHub?: GitHubConfig): string {
@@ -66,7 +94,10 @@ export function renderEditLink(stem: string, contentDirectory: string, gitHub?: 
 
 export function renderTags(tags: string[]): string {
   if (tags.length === 0) return '';
-  const items = tags.map(tag => `<a href="tags.html#tag-${tag}" class="page-tag">#${tag}</a>`);
+  const items = tags.map(tag => {
+    const safe = escapeHtml(tag);
+    return `<a href="tags.html#tag-${safe}" class="page-tag">#${safe}</a>`;
+  });
   return `<div class="page-tags">${items.join('\n')}</div>`;
 }
 
@@ -170,33 +201,22 @@ export function renderPageGraph(stem: string, graphData: GraphData, pages: Map<s
 export function buildPage(stem: string, model: SiteModel, template: string): string {
   const { pages, backlinks, graph, config } = model;
   const page = pages.get(stem)!;
-  const content = page.content;
-  const title = page.title;
-  const wikilinks = extractWikilinks(content);
 
-  const contentWithoutRelated = content.split(/^##\s+Related\s*$/m)[0];
+  let body = convertMarkdown(stripRelatedSection(page.content));
+  body = downgradeHeadings(body);
+  body = processWikilinks(body, pages);
 
-  let htmlBody = convertMarkdown(contentWithoutRelated);
-  htmlBody = downgradeHeadings(htmlBody);
-  htmlBody = processWikilinks(htmlBody, pages);
-
-  const relatedHtml = renderRelated(wikilinks, pages);
-  const backlinksHtml = renderBacklinks(stem, backlinks, pages);
-
-  const editLinkHtml = renderEditLink(stem, config['content-directory'], config.gitHub);
-  const tagsHtml = renderTags(page.tags);
-  const pageGraphHtml = renderPageGraph(stem, graph, pages);
-
-  return template
-    .replaceAll('{title}', title)
-    .replaceAll('{site_title}', config.title)
-    .replaceAll('{lang}', config.lang)
-    .replaceAll('{body}', htmlBody)
-    .replaceAll('{related}', relatedHtml)
-    .replaceAll('{backlinks}', backlinksHtml)
-    .replaceAll('{edit_link}', editLinkHtml)
-    .replaceAll('{tags}', tagsHtml)
-    .replaceAll('{page_graph}', pageGraphHtml);
+  return renderTemplate(template, {
+    title: escapeHtml(page.title),
+    site_title: config.title,
+    lang: config.lang,
+    body,
+    related: renderRelated(extractWikilinks(page.content), pages),
+    backlinks: renderBacklinks(stem, backlinks, pages),
+    edit_link: renderEditLink(stem, config['content-directory'], config.gitHub),
+    tags: renderTags(page.tags),
+    page_graph: renderPageGraph(stem, graph, pages),
+  });
 }
 
 export function extractTags(pages: Map<string, PageInfo>): Map<string, string[]> {
@@ -220,48 +240,42 @@ export function buildTagsPage(model: SiteModel, template: string): string {
   const sortedTags = [...tagMap.keys()].sort((a, b) => a.localeCompare(b));
 
   // Tag list (top summary)
-  const tagListItems = sortedTags.map(tag => {
+  const tagList = sortedTags.map(tag => {
+    const safe = escapeHtml(tag);
     const count = tagMap.get(tag)!.length;
-    return `<li><a href="#tag-${tag}" class="tag-link">#${tag}</a> <span class="tag-count">(${count})</span></li>`;
+    return `<li><a href="#tag-${safe}" class="tag-link">#${safe}</a> <span class="tag-count">(${count})</span></li>`;
   });
-  const tagListHtml = tagListItems.join('\n');
 
   // Tag sections (detail)
   const tagSections = sortedTags.map(tag => {
-    const stems = tagMap.get(tag)!.sort();
-    const pageItems = stems.map(stem => {
-      const title = pages.get(stem)!.title;
-      return `<li><a href="${stem}.html">${title}</a></li>`;
-    }).join('\n');
-    return `<section id="tag-${tag}" class="tag-section">
-<h2>#${tag}</h2>
-<ul>${pageItems}</ul>
+    const safe = escapeHtml(tag);
+    const items = tagMap.get(tag)!.sort().map(stem => pageListItem(stem, pages)).join('\n');
+    return `<section id="tag-${safe}" class="tag-section">
+<h2>#${safe}</h2>
+<ul>${items}</ul>
 </section>`;
   });
-  const tagSectionsHtml = tagSections.join('\n');
 
-  return template
-    .replaceAll('{title}', 'Tags')
-    .replaceAll('{site_title}', config.title)
-    .replaceAll('{lang}', config.lang)
-    .replaceAll('{tag_list}', tagListHtml)
-    .replaceAll('{tag_sections}', tagSectionsHtml)
-    .replaceAll('{tag_count}', String(sortedTags.length));
+  return renderTemplate(template, {
+    title: 'Tags',
+    site_title: config.title,
+    lang: config.lang,
+    tag_list: tagList.join('\n'),
+    tag_sections: tagSections.join('\n'),
+    tag_count: String(sortedTags.length),
+  });
 }
 
 export function buildIndex(model: SiteModel, template: string): string {
   const { pages, graph, config } = model;
-  const pageListItems: string[] = [];
-  for (const stem of [...pages.keys()].sort()) {
-    pageListItems.push(`<li><a href="${stem}.html">${pages.get(stem)!.title}</a></li>`);
-  }
-  const pageListHtml = pageListItems.join('\n');
+  const pageList = [...pages.keys()].sort().map(stem => pageListItem(stem, pages));
 
-  return template
-    .replaceAll('{title}', config.title)
-    .replaceAll('{subtitle}', config.subtitle || '')
-    .replaceAll('{lang}', config.lang)
-    .replaceAll('{graph_data}', JSON.stringify(graph))
-    .replaceAll('{page_list}', pageListHtml)
-    .replaceAll('{page_count}', String(pages.size));
+  return renderTemplate(template, {
+    title: config.title,
+    subtitle: config.subtitle || '',
+    lang: config.lang,
+    graph_data: JSON.stringify(graph),
+    page_list: pageList.join('\n'),
+    page_count: String(pages.size),
+  });
 }
