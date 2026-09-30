@@ -46,6 +46,7 @@ npm run typecheck    # tsc over src/ and __tests__/ (tests are not type-checked 
 
 - `npm run build` must succeed before publish (`prepublishOnly` hook runs `tsc`)
 - For GitHub Action releases, tag the commit (e.g., `v0.1.0`) and update the major version tag (`v0`)
+- Pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml`, which creates the GitHub release with commit subjects since the previous version tag as notes (skipped if the release already exists; edit the notes afterwards if needed)
 
 ## Git Conventions
 
